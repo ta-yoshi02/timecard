@@ -1,0 +1,28 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Employee {
+  id         String              @id @default(cuid())
+  name       String
+  role       String
+  hourlyRate Int
+  records    AttendanceRecord[]
+}
+
+model AttendanceRecord {
+  id           String   @id @default(cuid())
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId   String
+  date         DateTime
+  clockIn      String?
+  clockOut     String?
+  shiftStart   String?
+  shiftEnd     String?
+  breakMinutes Int?     @default(0)
+  note         String?
+}
