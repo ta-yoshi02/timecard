@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import dayjs from 'dayjs';
-import { AttendanceRecord, Employee, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
 const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
@@ -17,7 +17,7 @@ export async function GET(request: Request) {
     if (end) where.date.lte = dayjs(end).endOf('day').toDate();
   }
 
-  const [employees, records]: [Employee[], AttendanceRecord[]] = await Promise.all([
+  const [employees, records] = await Promise.all([
     prisma.employee.findMany({ orderBy: { name: 'asc' } }),
     prisma.attendanceRecord.findMany({
       where,

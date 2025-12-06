@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import { AttendanceRecord, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
 dayjs.extend(isSameOrAfter);
@@ -34,12 +34,12 @@ export async function GET(
     if (end) where.date.lte = dayjs(end).endOf('day').toDate();
   }
 
-  const allRecords: AttendanceRecord[] = await prisma.attendanceRecord.findMany({
+  const allRecords = await prisma.attendanceRecord.findMany({
     where,
     orderBy: { date: 'desc' },
   });
 
-  let records: AttendanceRecord[] = allRecords;
+  let records = allRecords;
   if (!start && !end && days && allRecords.length > 0) {
     const latestDate = dayjs(allRecords[0].date);
     const start = latestDate.subtract(days - 1, 'day');
