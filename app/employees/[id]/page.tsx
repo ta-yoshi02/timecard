@@ -205,7 +205,7 @@ export default function EmployeeDetailPage() {
           label="表示月"
           placeholder="月を選択"
           value={selectedMonth ?? monthStart}
-          onChange={setSelectedMonth}
+          onChange={(value) => setSelectedMonth(value ? dayjs(value as Date | string).toDate() : null)}
           valueFormat="YYYY年M月"
           maxDate={latestDate ?? undefined}
           clearable={false}
