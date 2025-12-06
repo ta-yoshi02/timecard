@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import dayjs from 'dayjs';
 import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
-import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
 dayjs.extend(isSameOrAfter);
@@ -27,7 +26,7 @@ export async function GET(
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
-  const where: Prisma.AttendanceRecordWhereInput = { employeeId: id };
+  const where: { employeeId: string; date?: { gte?: Date; lte?: Date } } = { employeeId: id };
   if (start || end) {
     where.date = {};
     if (start) where.date.gte = dayjs(start).startOf('day').toDate();

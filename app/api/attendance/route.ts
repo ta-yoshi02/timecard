@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import dayjs from 'dayjs';
-import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 
 const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
@@ -10,7 +9,7 @@ export async function GET(request: Request) {
   const start = searchParams.get('start');
   const end = searchParams.get('end');
 
-  const where: Prisma.AttendanceRecordWhereInput = {};
+  const where: { date?: { gte?: Date; lte?: Date } } = {};
   if (start || end) {
     where.date = {};
     if (start) where.date.gte = dayjs(start).startOf('day').toDate();
