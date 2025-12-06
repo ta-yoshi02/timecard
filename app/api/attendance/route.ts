@@ -24,7 +24,7 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  const mappedRecords = records.map((record) => ({
+  const mappedRecords = records.map((record: { date: Date } & Record<string, unknown>) => ({
     ...record,
     date: normalizeDate(record.date),
   }));
