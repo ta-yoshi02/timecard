@@ -12,6 +12,7 @@ model Employee {
   role       String
   hourlyRate Int
   records    AttendanceRecord[]
+  user       User?
 }
 
 model AttendanceRecord {
@@ -21,8 +22,25 @@ model AttendanceRecord {
   date         DateTime
   clockIn      String?
   clockOut     String?
+  breakStart   String?
+  breakEnd     String?
   shiftStart   String?
   shiftEnd     String?
   breakMinutes Int?     @default(0)
   note         String?
+}
+
+model User {
+  id           String    @id @default(cuid())
+  loginId      String    @unique
+  passwordHash String
+  role         UserRole
+  employeeId   String?   @unique
+  employee     Employee? @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+}
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
 }

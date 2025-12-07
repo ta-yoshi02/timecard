@@ -1,12 +1,13 @@
 'use client';
 
-import { AppShell, Burger, Group, NavLink, Stack, Title } from '@mantine/core';
+import { AppShell, Burger, Button, Group, NavLink, Stack, Text, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import React from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useMemo } from 'react';
+import { useAuth } from './AuthProvider';
 
-const navItems = [
+const adminNavItems = [
   {
     label: 'ダッシュボード',
     description: '日別勤怠の確認',
@@ -19,13 +20,49 @@ const navItems = [
   },
 ];
 
+const employeeNavItems = [
+  {
+    label: 'マイ打刻',
+    description: '自分の勤怠を確認・打刻',
+    href: '/my',
+  },
+];
+
+const guestNavItems = [
+  {
+    label: 'ログイン',
+    description: 'アカウントを選択',
+    href: '/login',
+  },
+];
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [opened, { toggle }] = useDisclosure();
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, employee, logout, loading } = useAuth();
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
+  };
+
+  const navItems = useMemo(() => {
+    if (user?.role === 'ADMIN') return adminNavItems;
+    if (user?.role === 'EMPLOYEE') return employeeNavItems;
+    return guestNavItems;
+  }, [user]);
+
+  const userLabel =
+    user?.role === 'ADMIN'
+      ? '管理者でログイン中'
+      : user?.role === 'EMPLOYEE'
+        ? `${employee?.name ?? '従業員'}でログイン中`
+        : null;
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
   };
 
   return (
@@ -45,6 +82,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <div>
               <Title order={4}>勤怠チェックダッシュボード</Title>
             </div>
+          </Group>
+          <Group gap="xs">
+            {userLabel && (
+              <Text size="sm" c="dimmed">
+                {userLabel}
+              </Text>
+            )}
+            {!loading && user && (
+              <Button variant="light" size="xs" onClick={handleLogout}>
+                ログアウト
+              </Button>
+            )}
+            {!loading && !user && (
+              <Button variant="light" size="xs" component={Link} href="/login">
+                ログイン
+              </Button>
+            )}
           </Group>
         </Group>
       </AppShell.Header>

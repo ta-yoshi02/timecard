@@ -1,66 +1,67 @@
-import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 import dayjs from 'dayjs';
-import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
 import prisma from '@/lib/prisma';
-
-dayjs.extend(isSameOrAfter);
+import { SESSION_COOKIE_NAME, readSessionToken } from '@/lib/auth';
 
 const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
 
-type DbAttendanceRecord = {
-  id: string;
-  employeeId: string;
-  date: Date;
-  clockIn?: string | null;
-  clockOut?: string | null;
-  shiftStart?: string | null;
-  shiftEnd?: string | null;
-  breakMinutes?: number | null;
-  note?: string | null;
-};
-
 export async function GET(
-  request: Request,
-  context: { params: Promise<{ id: string }> },
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await context.params;
   const { searchParams } = new URL(request.url);
-  const daysParam = searchParams.get('days');
-  const days = daysParam ? Number(daysParam) : null;
-  const start = searchParams.get('start');
-  const end = searchParams.get('end');
+  const { id } = await params;
+
+  if (!id) {
+    return NextResponse.json({ error: 'スタッフIDが必要です' }, { status: 400 });
+  }
+
+  const cookieStore = await cookies();
+  const session = readSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+  const isSelf = session?.employeeId === id;
+  const isAdmin = session?.role === 'ADMIN';
+  if (!isAdmin && !isSelf) {
+    return NextResponse.json(
+      { error: '権限がありません' },
+      { status: 403 },
+    );
+  }
 
   const employee = await prisma.employee.findUnique({
     where: { id },
   });
 
   if (!employee) {
-    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+    return NextResponse.json(
+      { error: '指定されたスタッフが見つかりません' },
+      { status: 404 },
+    );
   }
 
-  const where: { employeeId: string; date?: { gte?: Date; lte?: Date } } = { employeeId: id };
+  const start = searchParams.get('start');
+  const end = searchParams.get('end');
+
+  const where: { employeeId: string; date?: { gte?: Date; lte?: Date } } = {
+    employeeId: id,
+  };
+
   if (start || end) {
     where.date = {};
     if (start) where.date.gte = dayjs(start).startOf('day').toDate();
     if (end) where.date.lte = dayjs(end).endOf('day').toDate();
   }
 
-  const allRecords: DbAttendanceRecord[] = await prisma.attendanceRecord.findMany({
+  const records = await prisma.attendanceRecord.findMany({
     where,
-    orderBy: { date: 'desc' },
+    orderBy: [{ date: 'desc' }],
   });
 
-  let records = allRecords;
-  if (!start && !end && days && allRecords.length > 0) {
-    const latestDate = dayjs(allRecords[0].date);
-    const start = latestDate.subtract(days - 1, 'day');
-    records = allRecords.filter((r: DbAttendanceRecord) => dayjs(r.date).isSameOrAfter(start, 'day'));
-  }
-
-  const mappedRecords = records.map((record) => ({
-    ...record,
-    date: normalizeDate(record.date),
-  }));
-
-  return NextResponse.json({ employee, records: mappedRecords });
+  return NextResponse.json({
+    employee,
+    records: records.map((record) => ({
+      ...record,
+      date: normalizeDate(record.date),
+    })),
+  });
 }

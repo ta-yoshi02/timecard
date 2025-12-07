@@ -15,8 +15,17 @@ const NIGHT_SHIFT_END_HOUR = 5;
 const OVERTIME_RATE_MULTIPLIER = 0.25;
 const NIGHT_RATE_MULTIPLIER = 0.25;
 
-const getBreakMinutes = (record: AttendanceRecord) =>
-  typeof record.breakMinutes === "number" ? record.breakMinutes : 0;
+const getBreakMinutes = (record: AttendanceRecord) => {
+  if (typeof record.breakMinutes === "number") return record.breakMinutes;
+  if (record.breakStart && record.breakEnd) {
+    const start = dayjs(`${record.date}T${record.breakStart}`);
+    const end = dayjs(`${record.date}T${record.breakEnd}`);
+    if (start.isValid() && end.isValid() && end.isAfter(start)) {
+      return end.diff(start, "minute");
+    }
+  }
+  return 0;
+};
 
 export const calculateDailyHours = (
   record: AttendanceRecord,

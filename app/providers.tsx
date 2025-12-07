@@ -5,6 +5,7 @@ import '@mantine/dates/styles.css';
 import 'dayjs/locale/ja';
 import { MantineProvider } from '@mantine/core';
 import { DatesProvider } from '@mantine/dates';
+import { AuthProvider } from './components/AuthProvider';
 import React from 'react';
 
 type Props = {
@@ -22,7 +23,7 @@ export function Providers({ children }: Props) {
       }}
     >
       <DatesProvider settings={{ locale: 'ja', firstDayOfWeek: 0 }}>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </DatesProvider>
     </MantineProvider>
   );

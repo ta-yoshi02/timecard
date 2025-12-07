@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 import dayjs from 'dayjs';
 import prisma from '@/lib/prisma';
+import { SESSION_COOKIE_NAME, readSessionToken } from '@/lib/auth';
 
 type DbEmployee = {
   id: string;
@@ -23,7 +25,16 @@ type DbAttendanceRecord = {
 
 const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+  const cookieStore = await cookies();
+  const session = readSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+  if (!session || session.role !== 'ADMIN') {
+    return NextResponse.json(
+      { error: '管理者アカウントでのログインが必要です' },
+      { status: 401 },
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const start = searchParams.get('start');
   const end = searchParams.get('end');

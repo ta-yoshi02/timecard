@@ -1,29 +1,56 @@
 # 勤怠チェックダッシュボード
-小規模飲食店オーナー向けに、日別の打刻状況と異常を素早く確認できる Next.js + Mantine 製の勤怠ビューアです。企画・背景は `docs/planning.md` にまとまっています。
+小規模店舗のオーナー向けに、スタッフの勤怠状況を「見る・押す・直す」を最短でこなせる Next.js + Prisma 製アプリです。企画背景は `docs/planning.md` にあります。
 
-## 特徴
-- 日別/範囲の勤怠ダッシュボード（DatePicker、打刻漏れ・長時間勤務・休憩不足・深夜勤務バッジ、クイックフィルタ）
-- 打刻異常アラート抽出（「打刻異常」「残業が多い」フィルタ）
-- スタッフ一覧と個別詳細（月単位の打刻履歴、休憩時間表示、深夜勤務ハイライト、概算給与表示）
-- 時給を従業員情報に保持し、表示範囲の概算給与を算出
-- Prisma + PostgreSQL を利用したデータ管理。`prisma/seed.js` でサンプルデータ投入可能。
+## 何ができるか
+- 管理者ダッシュボード: 日付/範囲で打刻状況を一覧、打刻漏れ/長時間/休憩不足/深夜勤務をバッジ表示し、フィルタで異常だけ抽出。
+- スタッフ一覧・詳細: 直近7日と月次サマリー、概算給与、異常件数を確認。個別ページで日次の打刻・休憩・メモを確認。
+- 従業員セルフ打刻: ログインした本人が出勤・休憩開始/終了・退勤を押せる。今日の打刻をモーダルで修正可能。直近14日の履歴を閲覧。
+- 役割別ルーティング: 管理者はダッシュボード/スタッフ一覧、従業員はマイ打刻ページへ自動誘導。
+- セッション署名付き簡易ログイン（1時間TTL）と Prisma/PostgreSQL でデータ管理。
 
 ## セットアップ
-1. Node.js と PostgreSQL を用意し、接続文字列を `.env` に設定
-   ```bash
-   cp .env.example .env
-   # .env 内の DATABASE_URL を PostgreSQL 接続文字列に変更
-   ```
-2. 依存関係とスキーマを適用（`npm install` と `npm run build` で Prisma Client を生成します）
-   ```bash
-   npm install
-   npm run db:push      # Prisma スキーマ反映
-   npm run db:seed      # サンプルデータ投入（任意）
-   ```
-3. 開発サーバーを起動
-   ```bash
-   npm run dev          # http://localhost:3000
-   ```
+1) 環境変数を用意  
+```bash
+cp .env.example .env
+# DATABASE_URL  : Postgres 接続文字列（直結 or Data Proxy 元のURL）
+# AUTH_SECRET   : 長めのランダム文字列（セッショントークン署名用）
+# PRISMA_ACCELERATE_URL (任意): Prisma Accelerate/Data Proxy を使う場合に設定
+```
+
+2) 依存関係・スキーマ・サンプルデータ  
+```bash
+npm install
+npm run db:push   # スキーマ適用
+npm run db:seed   # サンプルデータ投入（任意）
+```
+
+3) 開発サーバー起動  
+```bash
+npm run dev   # http://localhost:3000
+```
+
+## サンプルアカウント（seed）
+- 管理者: `admin / adminpass`
+- 従業員: `hanako / password`（山田花子に紐付け）
+- 佐藤太郎は従業員として登録されていますが、User紐付けはしていません。ログインさせるには `User` に `employeeId` と `loginId/passwordHash/role: EMPLOYEE` を追加してください。
+
+## 使い方の流れ
+- 管理者: `/login` → ダッシュボードで日付/範囲を選択し異常確認 → スタッフをクリックして詳細へ。
+- 従業員: `/login` → `/my` に遷移。  
+  - 出勤前/退勤後: 出勤ボタン or 修正。  
+  - 勤務中: 休憩開始、修正、退勤。  
+  - 休憩中: 休憩終了、修正。  
+  - 修正モーダルで出勤・休憩開始/終了・退勤・メモを手入力して保存。
+
+## セキュリティメモ
+- パスワードは scrypt + ソルトでハッシュ化。照合は timing-safe 比較。
+- セッションは HMAC-SHA256 署名の httpOnly Cookie（1h TTL）。`AUTH_SECRET` は必ず十分長い乱数を設定。
+- Prisma はプレースホルダーでクエリを発行。生SQLは使用していません。
+
+## Prisma 接続について
+- 直接接続: `DATABASE_URL` に Postgres 直結URLを設定（`PRISMA_ACCELERATE_URL` は空でOK）。
+- Data Proxy / Accelerate: `PRISMA_ACCELERATE_URL` を設定すると Accelerate 経由で接続します（`DATABASE_URL` は元の接続文字列を指定）。
+- 生成したハッシュを `User.passwordHash` に保存し、管理者でログインすると `/` ダッシュボードへ、従業員でログインすると `/my` 打刻ページへ遷移します。
 
 ## スクリプト
 - `npm run dev` / `npm run build` / `npm start`

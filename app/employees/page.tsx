@@ -8,6 +8,7 @@ import Link from 'next/link';
 import StatusBadges from '../components/StatusBadges';
 import { getLatestDatasetDate, summarizeEmployees } from '@/lib/attendance';
 import { AttendanceRecord, Employee } from '@/lib/types';
+import { useAuth, useRequireRole } from '../components/AuthProvider';
 
 const formatHoursToHM = (hours: number) => {
   const totalMinutes = Math.round(hours * 60);
@@ -27,8 +28,12 @@ export default function EmployeesPage() {
   const [selectedMonth, setSelectedMonth] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { user, loading: authLoading } = useAuth();
+
+  useRequireRole('ADMIN');
 
   useEffect(() => {
+    if (authLoading || user?.role !== 'ADMIN') return;
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -49,7 +54,7 @@ export default function EmployeesPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [authLoading, user]);
 
   const latest = useMemo(() => getLatestDatasetDate(records) ?? null, [records]);
 

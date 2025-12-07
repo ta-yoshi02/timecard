@@ -11,6 +11,8 @@ export type AttendanceRecord = {
   date: string; // YYYY-MM-DD
   clockIn?: string;
   clockOut?: string;
+  breakStart?: string;
+  breakEnd?: string;
   shiftStart?: string;
   shiftEnd?: string;
   breakMinutes?: number;

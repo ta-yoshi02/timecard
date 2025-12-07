@@ -8,6 +8,7 @@ import dayjs from 'dayjs';
 import { AttendanceIssue, detectIssues, getLatestDatasetDate, summarizeEmployees } from '@/lib/attendance';
 import StatusBadges from './components/StatusBadges';
 import { AttendanceRecord, Employee } from '@/lib/types';
+import { useAuth, useRequireRole } from './components/AuthProvider';
 
 type QuickFilter = 'all' | 'anomalies' | 'overwork';
 
@@ -47,6 +48,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
+
+  useRequireRole('ADMIN');
 
   const latestAvailable = useMemo(() => getLatestDatasetDate(records), [records]);
 
@@ -93,6 +97,7 @@ export default function DashboardPage() {
   );
 
   useEffect(() => {
+    if (authLoading || user?.role !== 'ADMIN') return;
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -113,7 +118,7 @@ export default function DashboardPage() {
       }
     };
     fetchData();
-  }, []);
+  }, [authLoading, user]);
 
   return (
     <Stack gap="md">

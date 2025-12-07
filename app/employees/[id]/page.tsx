@@ -5,6 +5,7 @@ import { MonthPickerInput } from '@mantine/dates';
 import dayjs from 'dayjs';
 import { useParams, useRouter } from 'next/navigation';
 import StatusBadges from '../../components/StatusBadges';
+import { useAuth, useRequireRole } from '../../components/AuthProvider';
 import {
   AttendanceIssue,
   calculateDailyHours,
@@ -60,6 +61,8 @@ export default function EmployeeDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = resolveId(params?.id);
+  const { user, loading: authLoading } = useAuth();
+  useRequireRole('ADMIN');
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [allRecords, setAllRecords] = useState<AttendanceRecord[]>([]);
@@ -93,8 +96,10 @@ export default function EmployeeDetailPage() {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [id]);
+    if (!authLoading && user?.role === 'ADMIN') {
+      fetchData();
+    }
+  }, [id, authLoading, user]);
 
   const latestDate = useMemo(() => getLatestDatasetDate(allRecords), [allRecords]);
 
