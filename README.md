@@ -14,7 +14,7 @@
    cp .env.example .env
    # .env 内の DATABASE_URL を PostgreSQL 接続文字列に変更
    ```
-2. 依存関係とスキーマを適用
+2. 依存関係とスキーマを適用（`npm install` と `npm run build` で Prisma Client を生成します）
    ```bash
    npm install
    npm run db:push      # Prisma スキーマ反映
