@@ -2,6 +2,25 @@ import { NextResponse } from 'next/server';
 import dayjs from 'dayjs';
 import prisma from '@/lib/prisma';
 
+type DbEmployee = {
+  id: string;
+  name: string;
+  role: string;
+  hourlyRate: number;
+};
+
+type DbAttendanceRecord = {
+  id: string;
+  employeeId: string;
+  date: Date;
+  clockIn?: string | null;
+  clockOut?: string | null;
+  shiftStart?: string | null;
+  shiftEnd?: string | null;
+  breakMinutes?: number | null;
+  note?: string | null;
+};
+
 const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
 
 export async function GET(request: Request) {
@@ -16,7 +35,7 @@ export async function GET(request: Request) {
     if (end) where.date.lte = dayjs(end).endOf('day').toDate();
   }
 
-  const [employees, records] = await Promise.all([
+  const [employees, records]: [DbEmployee[], DbAttendanceRecord[]] = await Promise.all([
     prisma.employee.findMany({ orderBy: { name: 'asc' } }),
     prisma.attendanceRecord.findMany({
       where,
@@ -24,7 +43,7 @@ export async function GET(request: Request) {
     }),
   ]);
 
-  const mappedRecords = records.map((record: { date: Date } & Record<string, unknown>) => ({
+  const mappedRecords = records.map((record) => ({
     ...record,
     date: normalizeDate(record.date),
   }));

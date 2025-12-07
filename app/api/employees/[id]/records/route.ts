@@ -7,6 +7,18 @@ dayjs.extend(isSameOrAfter);
 
 const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
 
+type DbAttendanceRecord = {
+  id: string;
+  employeeId: string;
+  date: Date;
+  clockIn?: string | null;
+  clockOut?: string | null;
+  shiftStart?: string | null;
+  shiftEnd?: string | null;
+  breakMinutes?: number | null;
+  note?: string | null;
+};
+
 export async function GET(
   request: Request,
   context: { params: Promise<{ id: string }> },
@@ -33,7 +45,7 @@ export async function GET(
     if (end) where.date.lte = dayjs(end).endOf('day').toDate();
   }
 
-  const allRecords = await prisma.attendanceRecord.findMany({
+  const allRecords: DbAttendanceRecord[] = await prisma.attendanceRecord.findMany({
     where,
     orderBy: { date: 'desc' },
   });
@@ -42,7 +54,7 @@ export async function GET(
   if (!start && !end && days && allRecords.length > 0) {
     const latestDate = dayjs(allRecords[0].date);
     const start = latestDate.subtract(days - 1, 'day');
-    records = allRecords.filter((r) => dayjs(r.date).isSameOrAfter(start, 'day'));
+    records = allRecords.filter((r: DbAttendanceRecord) => dayjs(r.date).isSameOrAfter(start, 'day'));
   }
 
   const mappedRecords = records.map((record) => ({
