@@ -27,3 +27,21 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Analog Clock Styles */
+.react-clock__face {
+  border-color: var(--mantine-color-gray-3) !important;
+  background-color: white;
+}
+
+.react-clock__hand__body {
+  background-color: var(--mantine-color-dark-9) !important;
+}
+
+.react-clock__second-hand__body {
+  background-color: var(--mantine-color-red-6) !important;
+}
+
+.react-clock__mark__body {
+  background-color: var(--mantine-color-gray-5) !important;
+}

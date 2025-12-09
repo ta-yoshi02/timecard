@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import 'react-clock/dist/Clock.css';
 import AppLayout from "./components/AppLayout";
 import Providers from "./providers";
 
