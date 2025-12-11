@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (!user) return;
-    router.replace(user.role === 'ADMIN' ? '/' : '/my');
+    router.replace(user.role === 'ADMIN' ? '/admin' : '/my');
   }, [user, router]);
 
   const handleSubmit = async (values: { loginId: string; password: string }) => {
@@ -38,7 +38,7 @@ export default function LoginPage() {
         return;
       }
       await refresh();
-      router.replace(data.role === 'ADMIN' ? '/' : '/my');
+      router.replace(data.role === 'ADMIN' ? '/admin' : '/my');
     } catch (e) {
       console.error(e);
       setError('通信エラーが発生しました。時間をおいて再度お試しください。');

@@ -1,6 +1,6 @@
 'use client';
 
-import { Card, Center, Text, Stack } from '@mantine/core';
+import { Card, Stack } from '@mantine/core';
 import { useEffect, useState } from 'react';
 import Clock from 'react-clock';
 
@@ -9,24 +9,16 @@ type Props = {
 };
 
 export function AnalogClock({ size = 200 }: Props) {
-    const [value, setValue] = useState<Date | null>(null);
+    const [value, setValue] = useState<Date>(() => new Date());
 
     useEffect(() => {
-        const timer = setInterval(() => setValue(new Date()), 1000);
+        const tick = () => setValue(new Date());
+        const timer = setInterval(tick, 1000);
+        tick();
         return () => {
             clearInterval(timer);
         };
     }, []);
-
-    if (!value) {
-        return (
-            <Card padding="md" radius="md" withBorder mb="md" h={size + 40}>
-                <Center h="100%">
-                    <Text c="dimmed">Loading...</Text>
-                </Center>
-            </Card>
-        );
-    }
 
     return (
         <Card padding="md" radius="md" withBorder mb="md">

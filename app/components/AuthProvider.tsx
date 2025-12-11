@@ -97,7 +97,7 @@ export const useRequireRole = (role: 'ADMIN' | 'EMPLOYEE') => {
       return;
     }
     if (user.role !== role) {
-      router.replace(user.role === 'ADMIN' ? '/' : '/my');
+      router.replace(user.role === 'ADMIN' ? '/admin' : '/my');
     }
   }, [loading, user, role, router]);
 };

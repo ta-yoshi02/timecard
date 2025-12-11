@@ -11,7 +11,7 @@ const adminNavItems = [
   {
     label: 'ダッシュボード',
     description: '日別勤怠の確認',
-    href: '/',
+    href: '/admin',
   },
   {
     label: 'スタッフ一覧',
@@ -25,6 +25,11 @@ const employeeNavItems = [
     label: 'マイ打刻',
     description: '自分の勤怠を確認・打刻',
     href: '/my',
+  },
+  {
+    label: '勤怠サマリー',
+    description: '月別の勤務集計',
+    href: '/my/summary',
   },
 ];
 
@@ -42,16 +47,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, employee, logout, loading } = useAuth();
 
-  const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
-    return pathname.startsWith(href);
-  };
-
   const navItems = useMemo(() => {
     if (user?.role === 'ADMIN') return adminNavItems;
     if (user?.role === 'EMPLOYEE') return employeeNavItems;
     return guestNavItems;
   }, [user]);
+
+  const activeHref = useMemo(() => {
+    const matches = navItems
+      .map((item) => item.href)
+      .filter((href) => pathname === href || pathname.startsWith(`${href}/`));
+    if (matches.length === 0) return null;
+    return matches.sort((a, b) => b.length - a.length)[0];
+  }, [navItems, pathname]);
 
   const userLabel =
     user?.role === 'ADMIN'
@@ -112,7 +120,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               description={item.description}
               component={Link}
               href={item.href}
-              active={isActive(item.href)}
+              active={activeHref === item.href}
               variant="light"
             />
           ))}

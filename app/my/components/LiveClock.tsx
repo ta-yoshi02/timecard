@@ -6,24 +6,14 @@ import dayjs from 'dayjs';
 import { useEffect, useState } from 'react';
 
 export function LiveClock() {
-    const [time, setTime] = useState<dayjs.Dayjs | null>(null);
+    const [time, setTime] = useState<dayjs.Dayjs>(() => dayjs());
 
     useEffect(() => {
-        const timer = setInterval(() => {
-            setTime(dayjs());
-        }, 1000);
+        const tick = () => setTime(dayjs());
+        const timer = setInterval(tick, 1000);
+        tick();
         return () => clearInterval(timer);
     }, []);
-
-    if (!time) {
-        return (
-            <Card padding="md" radius="md" withBorder mb="md">
-                <Group justify="center">
-                    <Text c="dimmed">Loading...</Text>
-                </Group>
-            </Card>
-        );
-    }
 
     return (
         <Card padding="md" radius="md" withBorder mb="md">
