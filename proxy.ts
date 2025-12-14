@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { readSessionToken, SESSION_COOKIE_NAME } from './lib/session';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
     const session = await readSessionToken(token);
 
