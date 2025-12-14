@@ -168,7 +168,7 @@ export async function POST(request: NextRequest) {
         clockOut: inputClockOut || null,
         breakStart: inputBreakStart || null,
         breakEnd: inputBreakEnd || null,
-        breakMinutes,
+        breakMinutes: breakMinutes ?? 0,
         note: note || null,
       },
     });

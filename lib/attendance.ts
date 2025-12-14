@@ -98,7 +98,7 @@ type PayBreakdown = {
   nightMinutes: number;
 };
 
-const calculatePay = (
+export const calculatePay = (
   record: AttendanceRecord,
   hourlyRate: number,
 ): PayBreakdown => {

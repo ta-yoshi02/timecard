@@ -15,6 +15,7 @@ import {
   detectIssues,
   filterRecordsByDateRange,
   getLatestDatasetDate,
+  calculatePay,
 } from '@/lib/attendance';
 import { AttendanceRecord, Employee } from '@/lib/types';
 import { useEffect, useMemo, useState } from 'react';
@@ -245,8 +246,7 @@ export default function EmployeeDetailPage() {
       return acc + (h ?? 0);
     }, 0);
     const pay = records.reduce((acc, record) => {
-      const h = calculateDailyHours(record);
-      return acc + (h ?? 0) * employee.hourlyRate;
+      return acc + calculatePay(record, employee.hourlyRate).pay;
     }, 0);
     return {
       start: monthStart,
@@ -341,7 +341,6 @@ export default function EmployeeDetailPage() {
         <Table.Thead>
           <Table.Tr>
             <Table.Th>日付</Table.Th>
-            <Table.Th>シフト</Table.Th>
             <Table.Th>出勤</Table.Th>
             <Table.Th>退勤</Table.Th>
             <Table.Th>実働</Table.Th>
@@ -355,7 +354,10 @@ export default function EmployeeDetailPage() {
           {records.map((record, index) => {
             const issues = recordIssues[index];
             const hours = calculateDailyHours(record);
-            const dayPay = hours ? Math.round(hours * employee.hourlyRate) : undefined;
+            const dayPay =
+              employee && hours
+                ? calculatePay(record, employee.hourlyRate).pay
+                : undefined;
             return (
               <Table.Tr
                 key={record.id}
@@ -364,22 +366,25 @@ export default function EmployeeDetailPage() {
               >
                 <Table.Td>
                   <Text fw={600}>{dayjs(record.date).format('M/D')}</Text>
-                </Table.Td>
-                <Table.Td>
-                  {record.shiftStart && record.shiftEnd ? (
-                    <Text>
+                  {record.shiftStart && record.shiftEnd && (
+                    <Text size="xs" c="dimmed">
                       {record.shiftStart} - {record.shiftEnd}
                     </Text>
-                  ) : (
-                    <Text c="dimmed">-</Text>
                   )}
+                  <Text size="xs" c="dimmed">
+                    {dayjs(record.date).format('ddd')}
+                  </Text>
                 </Table.Td>
                 <Table.Td>{record.clockIn ?? '-'}</Table.Td>
                 <Table.Td>{record.clockOut ?? '-'}</Table.Td>
                 <Table.Td>{formatHours(hours)}</Table.Td>
-                <Table.Td>{typeof record.breakMinutes === 'number' ? `${record.breakMinutes}分` : '-'}</Table.Td>
+                <Table.Td>
+                  {typeof record.breakMinutes === 'number'
+                    ? `${record.breakMinutes}分`
+                    : '-'}
+                </Table.Td>
                 <Table.Td>{formatCurrency(dayPay)}</Table.Td>
-                <Table.Td>{record.note ?? '-'}</Table.Td>
+                <Table.Td>{record.note || '-'}</Table.Td>
                 <Table.Td>
                   <StatusBadges issues={issues} />
                 </Table.Td>

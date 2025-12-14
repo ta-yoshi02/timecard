@@ -5,7 +5,7 @@ import { MonthPickerInput } from '@mantine/dates';
 import dayjs from 'dayjs';
 import { useMemo } from 'react';
 import StatusBadges from '@/app/components/StatusBadges';
-import { calculateDailyHours, detectIssues } from '@/lib/attendance';
+import { calculateDailyHours, detectIssues, calculatePay } from '@/lib/attendance';
 import { AttendanceRecord } from '@/lib/types';
 
 type Props = {
@@ -14,6 +14,7 @@ type Props = {
   onMonthChange: (value: Date | null) => void;
   hourlyRate?: number;
   loading?: boolean;
+  headerAction?: React.ReactNode;
 };
 
 const formatHours = (hours: number | null) => {
@@ -58,6 +59,7 @@ export function MonthlySummary({
   onMonthChange,
   hourlyRate,
   loading,
+  headerAction,
 }: Props) {
   const monthStart = selectedMonth
     ? dayjs(selectedMonth).startOf('month').toDate()
@@ -71,7 +73,9 @@ export function MonthlySummary({
       return acc + (h ?? 0);
     }, 0);
     const pay =
-      typeof hourlyRate === 'number' ? Math.round(hours * hourlyRate) : undefined;
+      typeof hourlyRate === 'number'
+        ? records.reduce((acc, record) => acc + calculatePay(record, hourlyRate).pay, 0)
+        : undefined;
 
     return {
       hours,
@@ -96,21 +100,23 @@ export function MonthlySummary({
             {monthLabel} の勤怠状況（{monthRangeText}）
           </Text>
         </div>
-        <MonthPickerInput
-          label="対象月"
-          placeholder="月を選択"
-          value={monthStart}
-          onChange={(value) =>
-            onMonthChange(
-              value
-                ? dayjs(value as Date | string).startOf('month').toDate()
-                : null,
-            )
-          }
-          valueFormat="YYYY年M月"
-          maxDate={dayjs().endOf('month').toDate()}
-          clearable={false}
-        />
+        <Group>
+          {headerAction}
+          <MonthPickerInput
+            placeholder="月を選択"
+            value={monthStart}
+            onChange={(value) =>
+              onMonthChange(
+                value
+                  ? dayjs(value as Date | string).startOf('month').toDate()
+                  : null,
+              )
+            }
+            valueFormat="YYYY年M月"
+            maxDate={dayjs().endOf('month').toDate()}
+            clearable={false}
+          />
+        </Group>
       </Group>
 
       {loading ? (
@@ -159,8 +165,8 @@ export function MonthlySummary({
                 const issues = detectIssues(record);
                 const hours = calculateDailyHours(record);
                 const dayPay =
-                  typeof hourlyRate === 'number' && hours
-                    ? Math.round(hours * hourlyRate)
+                  typeof hourlyRate === 'number'
+                    ? calculatePay(record, hourlyRate).pay
                     : undefined;
                 return (
                   <Table.Tr key={record.id}>
@@ -176,7 +182,7 @@ export function MonthlySummary({
                     </Table.Td>
                     <Table.Td>{formatHours(hours)}</Table.Td>
                     <Table.Td>{formatCurrency(dayPay)}</Table.Td>
-                    <Table.Td>{record.note ?? '-'}</Table.Td>
+                    <Table.Td>{record.note || '-'}</Table.Td>
                     <Table.Td>
                       <StatusBadges issues={issues} />
                     </Table.Td>

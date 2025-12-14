@@ -12,7 +12,7 @@ import {
   Title,
   Button,
 } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
+
 import { IconPlus } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import dayjs from 'dayjs';
@@ -25,6 +25,7 @@ import { AttendanceHistory } from './components/AttendanceHistory';
 import { LiveClock } from './components/LiveClock';
 import { AnalogClock } from './components/AnalogClock';
 import { notifications } from '@mantine/notifications';
+import { CreateAttendanceModal } from './components/CreateAttendanceModal';
 
 export default function MyAttendancePage() {
   const { user, employee, loading: authLoading } = useAuth();
@@ -125,17 +126,6 @@ export default function MyAttendancePage() {
     },
   });
 
-  const createForm = useForm({
-    initialValues: {
-      date: null as Date | null,
-      clockIn: '',
-      clockOut: '',
-      breakStart: '',
-      breakEnd: '',
-      note: '',
-    },
-  });
-
   useEffect(() => {
     if (!editingRecord) return;
     editForm.setValues({
@@ -182,46 +172,7 @@ export default function MyAttendancePage() {
       setClocking(null);
     }
   };
-  const handleCreate = async (values: typeof createForm.values) => {
-    if (!values.date) return;
-    setClocking('clockIn');
-    try {
-      const res = await fetch('/api/clock', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'create',
-          date: dayjs(values.date).format('YYYY-MM-DD'),
-          clientTime: dayjs().toISOString(),
-          clockIn: values.clockIn,
-          clockOut: values.clockOut,
-          breakStart: values.breakStart,
-          breakEnd: values.breakEnd,
-          note: values.note,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.error ?? '作成に失敗しました');
-      }
-      setCreating(false);
-      createForm.reset();
-      await fetchRecords();
-      notifications.show({
-        title: '成功',
-        message: '勤怠を追加しました',
-        color: 'teal',
-      });
-    } catch (e) {
-      notifications.show({
-        title: 'エラー',
-        message: e instanceof Error ? e.message : '作成に失敗しました',
-        color: 'red',
-      });
-    } finally {
-      setClocking(null);
-    }
-  };
+
 
   return (
     <Container size="lg" py="xl">
@@ -309,29 +260,11 @@ export default function MyAttendancePage() {
           </form>
         </Modal>
 
-        <Modal opened={creating} onClose={() => setCreating(false)} title="勤怠を追加" centered>
-          <form onSubmit={createForm.onSubmit(handleCreate)}>
-            <Stack gap="sm">
-              <DateInput
-                label="日付"
-                placeholder="日付を選択"
-                valueFormat="YYYY/MM/DD"
-                {...createForm.getInputProps('date')}
-                required
-              />
-              <TextInput label="出勤" placeholder="HH:mm" {...createForm.getInputProps('clockIn')} />
-              <Group grow>
-                <TextInput label="休憩開始" placeholder="HH:mm" {...createForm.getInputProps('breakStart')} />
-                <TextInput label="休憩終了" placeholder="HH:mm" {...createForm.getInputProps('breakEnd')} />
-              </Group>
-              <TextInput label="退勤" placeholder="HH:mm" {...createForm.getInputProps('clockOut')} />
-              <Textarea label="メモ" minRows={2} {...createForm.getInputProps('note')} />
-              <Button type="submit" loading={clocking !== null}>
-                追加する
-              </Button>
-            </Stack>
-          </form>
-        </Modal>
+        <CreateAttendanceModal
+          opened={creating}
+          onClose={() => setCreating(false)}
+          onSuccess={fetchRecords}
+        />
       </Stack>
     </Container>
   );

@@ -7,6 +7,9 @@ import { notifications } from '@mantine/notifications';
 import { MonthlySummary } from '../components/MonthlySummary';
 import { AttendanceRecord } from '@/lib/types';
 import { useAuth, useRequireRole } from '../../components/AuthProvider';
+import { Button } from '@mantine/core';
+import { IconPlus } from '@tabler/icons-react';
+import { CreateAttendanceModal } from '../components/CreateAttendanceModal';
 
 export default function MyMonthlySummaryPage() {
   const { user, employee, loading: authLoading } = useAuth();
@@ -17,6 +20,7 @@ export default function MyMonthlySummaryPage() {
     dayjs().startOf('month').toDate(),
   );
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
   const fetchMonthlyRecords = useCallback(
     async (month: Date) => {
@@ -73,6 +77,21 @@ export default function MyMonthlySummaryPage() {
           selectedMonth={selectedMonth}
           onMonthChange={setSelectedMonth}
           hourlyRate={employee?.hourlyRate}
+          headerAction={
+            <Button
+              leftSection={<IconPlus size={16} />}
+              variant="light"
+              size="xs"
+              onClick={() => setCreating(true)}
+            >
+              勤怠を追加
+            </Button>
+          }
+        />
+        <CreateAttendanceModal
+          opened={creating}
+          onClose={() => setCreating(false)}
+          onSuccess={() => selectedMonth && fetchMonthlyRecords(selectedMonth)}
         />
       </Stack>
     </Container>
