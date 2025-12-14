@@ -40,36 +40,6 @@ export const calculateDailyHours = (
   return netMinutes / 60;
 };
 
-export const detectIssues = (record: AttendanceRecord): AttendanceIssue[] => {
-  const issues: AttendanceIssue[] = [];
-  if (!record.clockIn) issues.push("missingClockIn");
-  if (!record.clockOut) issues.push("missingClockOut");
-
-  const start = record.clockIn ? dayjs(`${record.date}T${record.clockIn}`) : null;
-  const end = record.clockOut ? dayjs(`${record.date}T${record.clockOut}`) : null;
-  const rawDuration = start && end ? end.diff(start, "minute") : null;
-  const breakMinutes = getBreakMinutes(record);
-
-  if (rawDuration !== null) {
-    // Break compliance (labor standards)
-    if (rawDuration > 8 * 60 && breakMinutes < 60) {
-      issues.push("insufficientBreak");
-    } else if (rawDuration > 6 * 60 && breakMinutes < 45) {
-      issues.push("insufficientBreak");
-    }
-    // Night shift flag (22:00以降に就業)
-    if (end && end.hour() >= NIGHT_SHIFT_START_HOUR) {
-      issues.push("nightShift");
-    }
-  }
-
-  const hours = calculateDailyHours(record);
-  if (hours !== null && hours > DAILY_OVERTIME_THRESHOLD_HOURS) {
-    issues.push("overwork");
-  }
-  return issues;
-};
-
 const calculateNightMinutes = (
   start: dayjs.Dayjs,
   end: dayjs.Dayjs,
@@ -89,6 +59,36 @@ const calculateNightMinutes = (
   const window1 = overlap(nightStart, midnight);
   const window2 = overlap(midnight, nextDayNightEnd);
   return window1 + window2;
+};
+
+export const detectIssues = (record: AttendanceRecord): AttendanceIssue[] => {
+  const issues: AttendanceIssue[] = [];
+  if (!record.clockIn) issues.push("missingClockIn");
+  if (!record.clockOut) issues.push("missingClockOut");
+
+  const start = record.clockIn ? dayjs(`${record.date}T${record.clockIn}`) : null;
+  const end = record.clockOut ? dayjs(`${record.date}T${record.clockOut}`) : null;
+  const rawDuration = start && end ? end.diff(start, "minute") : null;
+  const breakMinutes = getBreakMinutes(record);
+
+  if (rawDuration !== null) {
+    // Break compliance (labor standards)
+    if (rawDuration > 8 * 60 && breakMinutes < 60) {
+      issues.push("insufficientBreak");
+    } else if (rawDuration > 6 * 60 && breakMinutes < 45) {
+      issues.push("insufficientBreak");
+    }
+    // Night shift flag (22:00以降に就業)
+    if (start && end && calculateNightMinutes(start, end) > 0) {
+      issues.push("nightShift");
+    }
+  }
+
+  const hours = calculateDailyHours(record);
+  if (hours !== null && hours > DAILY_OVERTIME_THRESHOLD_HOURS) {
+    issues.push("overwork");
+  }
+  return issues;
 };
 
 type PayBreakdown = {

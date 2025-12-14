@@ -10,12 +10,12 @@ import StatusBadges from '../components/StatusBadges';
 import { AttendanceRecord, Employee } from '@/lib/types';
 import { useAuth, useRequireRole } from '../components/AuthProvider';
 
-type QuickFilter = 'all' | 'anomalies' | 'overwork';
+type QuickFilter = 'all' | 'anomalies' | 'insufficientBreak';
 
 const quickFilterOptions: { label: string; value: QuickFilter; description: string }[] = [
   { label: 'すべて', value: 'all', description: '全スタッフを表示' },
   { label: '打刻異常', value: 'anomalies', description: '選択日付内に打刻漏れがあるスタッフ' },
-  { label: '残業が多い', value: 'overwork', description: '長時間/休憩不足を含むスタッフ' },
+  { label: '休憩不足', value: 'insufficientBreak', description: '休憩時間が不足しているスタッフ' },
 ];
 
 const anomalyIssues: AttendanceIssue[] = ['missingClockIn', 'missingClockOut'];
@@ -71,14 +71,14 @@ export default function DashboardPage() {
       const hasAnomaly = summary.records.some((record) =>
         detectIssues(record).some((issue) => anomalyIssues.includes(issue)),
       );
-      const hasOverwork = summary.records.some((record) =>
-        detectIssues(record).some((issue) => overworkIssues.includes(issue)),
+      const hasInsufficientBreak = summary.records.some((record) =>
+        detectIssues(record).includes('insufficientBreak'),
       );
       if (filter === 'anomalies') {
         return hasAnomaly;
       }
-      if (filter === 'overwork') {
-        return hasOverwork;
+      if (filter === 'insufficientBreak') {
+        return hasInsufficientBreak;
       }
       return true;
     });
@@ -211,9 +211,9 @@ export default function DashboardPage() {
               const latestIssues = latest ? detectIssues(latest) : [];
               const issueLabel = latest
                 ? formatClockRange(
-                    latestIssues,
-                    `${latest.date} ${latest.clockIn ?? '--:--'} - ${latest.clockOut ?? '--:--'}`,
-                  )
+                  latestIssues,
+                  `${latest.date} ${latest.clockIn ?? '--:--'} - ${latest.clockOut ?? '--:--'}`,
+                )
                 : 'データなし';
 
               const statusIssues = Array.from(
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                       <Text fw={600}>{summary.employee.name}</Text>
                     </Group>
                   </Table.Td>
-              <Table.Td>{summary.employee.role}</Table.Td>
+                  <Table.Td>{summary.employee.role}</Table.Td>
                   <Table.Td>{summary.records.length}日</Table.Td>
                   <Table.Td>{formatHoursToHM(summary.totalHours)}</Table.Td>
                   <Table.Td>{formatCurrency(summary.estimatedPay)}</Table.Td>

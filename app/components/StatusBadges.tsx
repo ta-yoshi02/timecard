@@ -16,12 +16,14 @@ const issueConfig: Record<AttendanceIssue, { label: string; color: string }> = {
 };
 
 export function StatusBadges({ issues }: Props) {
-  if (!issues || issues.length === 0) {
-    return <Badge color="green">問題なし</Badge>;
-  }
+  const criticalIssues: AttendanceIssue[] = ['missingClockIn', 'missingClockOut', 'insufficientBreak'];
+  const hasCriticalIssues = issues.some((issue) => criticalIssues.includes(issue));
 
   return (
     <Group gap={6} wrap="wrap">
+      {!hasCriticalIssues && (
+        <Badge color="green">問題なし</Badge>
+      )}
       {issues.map((issue) => (
         <Badge key={issue} color={issueConfig[issue].color} variant="light">
           {issueConfig[issue].label}

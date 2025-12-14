@@ -116,6 +116,12 @@ export default function EmployeeDetailPage() {
       breakEnd: '',
       note: '',
     },
+    validate: {
+      clockIn: (value) => (value && !/^([0-9]|[1-4][0-9]):[0-5][0-9]$/.test(value) ? '無効な時間です (HH:mm)' : null),
+      clockOut: (value) => (value && !/^([0-9]|[1-4][0-9]):[0-5][0-9]$/.test(value) ? '無効な時間です (HH:mm)' : null),
+      breakStart: (value) => (value && !/^([0-9]|[1-4][0-9]):[0-5][0-9]$/.test(value) ? '無効な時間です (HH:mm)' : null),
+      breakEnd: (value) => (value && !/^([0-9]|[1-4][0-9]):[0-5][0-9]$/.test(value) ? '無効な時間です (HH:mm)' : null),
+    },
   });
 
   const createForm = useForm({
@@ -126,6 +132,12 @@ export default function EmployeeDetailPage() {
       breakStart: '',
       breakEnd: '',
       note: '',
+    },
+    validate: {
+      clockIn: (value) => (value && !/^([0-9]|[1-4][0-9]):[0-5][0-9]$/.test(value) ? '無効な時間です (HH:mm)' : null),
+      clockOut: (value) => (value && !/^([0-9]|[1-4][0-9]):[0-5][0-9]$/.test(value) ? '無効な時間です (HH:mm)' : null),
+      breakStart: (value) => (value && !/^([0-9]|[1-4][0-9]):[0-5][0-9]$/.test(value) ? '無効な時間です (HH:mm)' : null),
+      breakEnd: (value) => (value && !/^([0-9]|[1-4][0-9]):[0-5][0-9]$/.test(value) ? '無効な時間です (HH:mm)' : null),
     },
   });
 
