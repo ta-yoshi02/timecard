@@ -6,7 +6,7 @@ import { SESSION_COOKIE_NAME, readSessionToken } from '@/lib/auth';
 export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  const session = readSessionToken(token);
+  const session = await readSessionToken(token);
 
   if (!session) {
     return NextResponse.json({ user: null });

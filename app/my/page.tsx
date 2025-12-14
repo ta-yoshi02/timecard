@@ -12,6 +12,8 @@ import {
   Title,
   Button,
 } from '@mantine/core';
+import { DateInput } from '@mantine/dates';
+import { IconPlus } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -33,7 +35,8 @@ export default function MyAttendancePage() {
   const [clocking, setClocking] = useState<
     'clockIn' | 'clockOut' | 'breakStart' | 'breakEnd' | null
   >(null);
-  const [editing, setEditing] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const fetchRecords = useCallback(async () => {
     if (!user || user.role !== 'EMPLOYEE') return;
@@ -86,7 +89,10 @@ export default function MyAttendancePage() {
       const res = await fetch('/api/clock', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({
+          action,
+          clientTime: dayjs().toISOString(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -119,17 +125,28 @@ export default function MyAttendancePage() {
     },
   });
 
+  const createForm = useForm({
+    initialValues: {
+      date: null as Date | null,
+      clockIn: '',
+      clockOut: '',
+      breakStart: '',
+      breakEnd: '',
+      note: '',
+    },
+  });
+
   useEffect(() => {
-    if (!editing) return;
+    if (!editingRecord) return;
     editForm.setValues({
-      clockIn: todayRecord?.clockIn ?? '',
-      clockOut: todayRecord?.clockOut ?? '',
-      breakStart: todayRecord?.breakStart ?? '',
-      breakEnd: todayRecord?.breakEnd ?? '',
-      note: todayRecord?.note ?? '',
+      clockIn: editingRecord.clockIn ?? '',
+      clockOut: editingRecord.clockOut ?? '',
+      breakStart: editingRecord.breakStart ?? '',
+      breakEnd: editingRecord.breakEnd ?? '',
+      note: editingRecord.note ?? '',
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editing, todayRecord]);
+  }, [editingRecord]);
 
   const handleUpdate = async (values: typeof editForm.values) => {
     setClocking('clockIn'); // reuse loading state indicator
@@ -139,6 +156,8 @@ export default function MyAttendancePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'update',
+          recordId: editingRecord?.id,
+          clientTime: dayjs().toISOString(),
           ...values,
         }),
       });
@@ -146,7 +165,7 @@ export default function MyAttendancePage() {
       if (!res.ok) {
         throw new Error(data?.error ?? '修正に失敗しました');
       }
-      setEditing(false);
+      setEditingRecord(null);
       await fetchRecords();
       notifications.show({
         title: '成功',
@@ -157,6 +176,46 @@ export default function MyAttendancePage() {
       notifications.show({
         title: 'エラー',
         message: e instanceof Error ? e.message : '修正に失敗しました',
+        color: 'red',
+      });
+    } finally {
+      setClocking(null);
+    }
+  };
+  const handleCreate = async (values: typeof createForm.values) => {
+    if (!values.date) return;
+    setClocking('clockIn');
+    try {
+      const res = await fetch('/api/clock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          date: dayjs(values.date).format('YYYY-MM-DD'),
+          clientTime: dayjs().toISOString(),
+          clockIn: values.clockIn,
+          clockOut: values.clockOut,
+          breakStart: values.breakStart,
+          breakEnd: values.breakEnd,
+          note: values.note,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error ?? '作成に失敗しました');
+      }
+      setCreating(false);
+      createForm.reset();
+      await fetchRecords();
+      notifications.show({
+        title: '成功',
+        message: '勤怠を追加しました',
+        color: 'teal',
+      });
+    } catch (e) {
+      notifications.show({
+        title: 'エラー',
+        message: e instanceof Error ? e.message : '作成に失敗しました',
         color: 'red',
       });
     } finally {
@@ -176,7 +235,7 @@ export default function MyAttendancePage() {
               {dayjs().format('YYYY年M月D日 (ddd)')}
             </Text>
           </div>
-          <Button variant="subtle" size="sm" onClick={() => setEditing(true)}>
+          <Button variant="subtle" size="sm" onClick={() => todayRecord && setEditingRecord(todayRecord)}>
             本日の打刻を修正
           </Button>
         </Group>
@@ -215,11 +274,25 @@ export default function MyAttendancePage() {
             </Stack>
           </Grid.Col>
           <Grid.Col span={12}>
-            <AttendanceHistory records={records} loading={loading} />
+            <AttendanceHistory
+              records={records}
+              loading={loading}
+              onEdit={setEditingRecord}
+              headerAction={
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  variant="light"
+                  size="xs"
+                  onClick={() => setCreating(true)}
+                >
+                  勤怠を追加
+                </Button>
+              }
+            />
           </Grid.Col>
         </Grid>
 
-        <Modal opened={editing} onClose={() => setEditing(false)} title="本日の打刻を修正" centered>
+        <Modal opened={!!editingRecord} onClose={() => setEditingRecord(null)} title={`${editingRecord ? dayjs(editingRecord.date).format('M/D') : ''} の打刻を修正`} centered>
           <form onSubmit={editForm.onSubmit(handleUpdate)}>
             <Stack gap="sm">
               <TextInput label="出勤" placeholder="HH:mm" {...editForm.getInputProps('clockIn')} />
@@ -231,6 +304,30 @@ export default function MyAttendancePage() {
               <Textarea label="メモ" minRows={2} {...editForm.getInputProps('note')} />
               <Button type="submit" loading={clocking !== null}>
                 保存する
+              </Button>
+            </Stack>
+          </form>
+        </Modal>
+
+        <Modal opened={creating} onClose={() => setCreating(false)} title="勤怠を追加" centered>
+          <form onSubmit={createForm.onSubmit(handleCreate)}>
+            <Stack gap="sm">
+              <DateInput
+                label="日付"
+                placeholder="日付を選択"
+                valueFormat="YYYY/MM/DD"
+                {...createForm.getInputProps('date')}
+                required
+              />
+              <TextInput label="出勤" placeholder="HH:mm" {...createForm.getInputProps('clockIn')} />
+              <Group grow>
+                <TextInput label="休憩開始" placeholder="HH:mm" {...createForm.getInputProps('breakStart')} />
+                <TextInput label="休憩終了" placeholder="HH:mm" {...createForm.getInputProps('breakEnd')} />
+              </Group>
+              <TextInput label="退勤" placeholder="HH:mm" {...createForm.getInputProps('clockOut')} />
+              <Textarea label="メモ" minRows={2} {...createForm.getInputProps('note')} />
+              <Button type="submit" loading={clocking !== null}>
+                追加する
               </Button>
             </Stack>
           </form>

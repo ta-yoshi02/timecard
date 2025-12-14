@@ -9,6 +9,8 @@ import StatusBadges from '@/app/components/StatusBadges';
 type Props = {
     records: AttendanceRecord[];
     loading?: boolean;
+    onEdit?: (record: AttendanceRecord) => void;
+    headerAction?: React.ReactNode;
 };
 
 const formatHours = (hours: number | null) => {
@@ -19,7 +21,7 @@ const formatHours = (hours: number | null) => {
     return `${h}時間${m}分`;
 };
 
-export function AttendanceHistory({ records, loading }: Props) {
+export function AttendanceHistory({ records, loading, onEdit, headerAction }: Props) {
     if (loading) {
         return (
             <Card padding="md" radius="md" withBorder>
@@ -31,7 +33,16 @@ export function AttendanceHistory({ records, loading }: Props) {
     if (records.length === 0) {
         return (
             <Card padding="md" radius="md" withBorder>
-                <Text c="dimmed" ta="center">表示できる勤怠データがありません。</Text>
+                <Group justify="space-between" mb="md">
+                    <div>
+                        <Text fw={600}>直近の勤怠</Text>
+                        <Text c="dimmed" size="sm">
+                            過去14日分の履歴
+                        </Text>
+                    </div>
+                    {headerAction}
+                </Group>
+                <Text c="dimmed" ta="center" py="xl">表示できる勤怠データがありません。</Text>
             </Card>
         );
     }
@@ -45,6 +56,7 @@ export function AttendanceHistory({ records, loading }: Props) {
                         過去14日分の履歴
                     </Text>
                 </div>
+                {headerAction}
             </Group>
             <Table verticalSpacing="sm" highlightOnHover>
                 <Table.Thead>
@@ -62,7 +74,11 @@ export function AttendanceHistory({ records, loading }: Props) {
                         const issues = detectIssues(record);
                         const hours = calculateDailyHours(record);
                         return (
-                            <Table.Tr key={record.id}>
+                            <Table.Tr
+                                key={record.id}
+                                onClick={() => onEdit?.(record)}
+                                style={{ cursor: onEdit ? 'pointer' : 'default' }}
+                            >
                                 <Table.Td>
                                     <Text size="sm" fw={500}>
                                         {dayjs(record.date).format('M/D')}

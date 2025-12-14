@@ -18,7 +18,7 @@ export async function GET(
   }
 
   const cookieStore = await cookies();
-  const session = readSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+  const session = await readSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
   const isSelf = session?.employeeId === id;
   const isAdmin = session?.role === 'ADMIN';
   if (!isAdmin && !isSelf) {

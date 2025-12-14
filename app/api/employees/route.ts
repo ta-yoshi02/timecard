@@ -5,7 +5,7 @@ import { SESSION_COOKIE_NAME, readSessionToken } from '@/lib/auth';
 
 export async function GET() {
   const cookieStore = await cookies();
-  const session = readSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+  const session = await readSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
   if (!session || session.role !== 'ADMIN') {
     return NextResponse.json(
       { error: '管理者アカウントでのログインが必要です' },

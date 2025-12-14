@@ -9,7 +9,7 @@ const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
 export async function GET(request: NextRequest) {
   const cookieStore = await cookies();
   const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
-  const session = readSessionToken(token);
+  const session = await readSessionToken(token);
 
   if (!session || session.role !== 'EMPLOYEE' || !session.employeeId) {
     return NextResponse.json(

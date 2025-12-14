@@ -28,6 +28,8 @@ model AttendanceRecord {
   shiftEnd     String?
   breakMinutes Int?     @default(0)
   note         String?
+  
+  @@unique([employeeId, date])
 }
 
 model User {

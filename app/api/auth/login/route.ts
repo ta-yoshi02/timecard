@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const sessionToken = createSessionToken({
+  const sessionToken = await createSessionToken({
     userId: user.id,
     role: user.role,
     employeeId: user.employeeId ?? undefined,
