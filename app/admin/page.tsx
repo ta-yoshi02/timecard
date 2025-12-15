@@ -1,14 +1,18 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Badge, Card, Group, SegmentedControl, Stack, Table, Text, Title } from '@mantine/core';
+import { ActionIcon, Badge, Button, Card, Group, Menu, SegmentedControl, Stack, Table, Text, Title } from '@mantine/core';
 import { DatePickerInput, DatesRangeValue } from '@mantine/dates';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
+import { IconDots, IconEdit, IconKey, IconPlus, IconTrash } from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
 import { AttendanceIssue, detectIssues, getLatestDatasetDate, summarizeEmployees } from '@/lib/attendance';
 import StatusBadges from '../components/StatusBadges';
 import { AttendanceRecord, Employee } from '@/lib/types';
 import { useAuth, useRequireRole } from '../components/AuthProvider';
+import { EmployeeModal } from './components/EmployeeModal';
+import { UserManagementModal } from './components/UserManagementModal';
 
 type QuickFilter = 'all' | 'anomalies' | 'insufficientBreak';
 
@@ -19,7 +23,6 @@ const quickFilterOptions: { label: string; value: QuickFilter; description: stri
 ];
 
 const anomalyIssues: AttendanceIssue[] = ['missingClockIn', 'missingClockOut'];
-const overworkIssues: AttendanceIssue[] = ['overwork', 'insufficientBreak'];
 
 const formatClockRange = (recordIssues: AttendanceIssue[], dateLabel: string) => {
   if (recordIssues.includes('missingClockIn') && recordIssues.includes('missingClockOut')) {
@@ -47,6 +50,12 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<QuickFilter>('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Modal states
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
+  const [userModalEmployee, setUserModalEmployee] = useState<Employee | null>(null);
+
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
@@ -96,29 +105,52 @@ export default function DashboardPage() {
     0,
   );
 
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/attendance');
+      if (!res.ok) throw new Error(`API error: ${res.status}`);
+      const data = await res.json();
+      // Fetch employees separately to get user data if needed, or rely on attendance API if it includes it
+      // Actually attendance API might not include user data. Let's fetch employees explicitly.
+      const empRes = await fetch('/api/employees');
+      if (empRes.ok) {
+        const empData = await empRes.json();
+        setEmployees(empData.employees);
+      } else {
+        setEmployees(data.employees);
+      }
+
+      setRecords(data.records);
+      const latest = getLatestDatasetDate(data.records);
+      if (latest && !dateRange[0]) {
+        setDateRange([latest, latest]);
+      }
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'データ取得に失敗しました');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (authLoading || user?.role !== 'ADMIN') return;
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch('/api/attendance');
-        if (!res.ok) throw new Error(`API error: ${res.status}`);
-        const data = await res.json();
-        setEmployees(data.employees);
-        setRecords(data.records);
-        const latest = getLatestDatasetDate(data.records);
-        if (latest) {
-          setDateRange([latest, latest]);
-        }
-      } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'データ取得に失敗しました');
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [authLoading, user]);
+
+  const handleDeleteEmployee = async (id: string) => {
+    if (!confirm('本当に削除しますか？\nこの操作は取り消せません。関連する打刻データも全て削除されます。')) return;
+    try {
+      const res = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('削除に失敗しました');
+      notifications.show({ title: '成功', message: '従業員を削除しました', color: 'teal' });
+      fetchData();
+    } catch {
+      notifications.show({ title: 'エラー', message: '削除に失敗しました', color: 'red' });
+    }
+  };
 
   if (authLoading) {
     return (
@@ -143,6 +175,9 @@ export default function DashboardPage() {
           <Title order={2}>日別勤怠ダッシュボード</Title>
           <Text c="dimmed">日付を選んで打刻状況と異常を確認</Text>
         </div>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => setCreateModalOpen(true)}>
+          従業員を追加
+        </Button>
       </Group>
 
       <Card shadow="xs" padding="md" radius="md" withBorder>
@@ -165,6 +200,7 @@ export default function DashboardPage() {
               data={quickFilterOptions.map((opt) => ({
                 label: opt.label,
                 value: opt.value,
+                description: opt.description,
               }))}
             />
           </Group>
@@ -189,7 +225,7 @@ export default function DashboardPage() {
           <div>
             <Text fw={600}>スタッフ別勤怠</Text>
             <Text size="sm" c="dimmed">
-              行をクリックすると詳細へ移動します。概算給与は選択した日付範囲の累計です。
+              行をクリックすると詳細へ移動します。
             </Text>
           </div>
         </Group>
@@ -198,11 +234,12 @@ export default function DashboardPage() {
             <Table.Tr>
               <Table.Th>スタッフ</Table.Th>
               <Table.Th>役割</Table.Th>
-              <Table.Th>勤務日数(選択範囲)</Table.Th>
-              <Table.Th>合計時間(選択範囲)</Table.Th>
-              <Table.Th>概算給与(選択範囲)</Table.Th>
+              <Table.Th>勤務日数</Table.Th>
+              <Table.Th>合計時間</Table.Th>
+              <Table.Th>概算給与</Table.Th>
               <Table.Th>最終打刻</Table.Th>
               <Table.Th>異常</Table.Th>
+              <Table.Th>操作</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -235,13 +272,44 @@ export default function DashboardPage() {
                       <Text fw={600}>{summary.employee.name}</Text>
                     </Group>
                   </Table.Td>
-                  <Table.Td>{summary.employee.role}</Table.Td>
+                  <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
                   <Table.Td>{summary.records.length}日</Table.Td>
                   <Table.Td>{formatHoursToHM(summary.totalHours)}</Table.Td>
                   <Table.Td>{formatCurrency(summary.estimatedPay)}</Table.Td>
                   <Table.Td>{issueLabel}</Table.Td>
                   <Table.Td>
                     <StatusBadges issues={statusIssues} />
+                  </Table.Td>
+                  <Table.Td onClick={(e) => e.stopPropagation()}>
+                    <Menu shadow="md" width={200}>
+                      <Menu.Target>
+                        <ActionIcon variant="subtle" color="gray">
+                          <IconDots size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          leftSection={<IconEdit size={14} />}
+                          onClick={() => setEditingEmployee(summary.employee)}
+                        >
+                          編集
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconKey size={14} />}
+                          onClick={() => setUserModalEmployee(summary.employee)}
+                        >
+                          アカウント管理
+                        </Menu.Item>
+                        <Menu.Divider />
+                        <Menu.Item
+                          color="red"
+                          leftSection={<IconTrash size={14} />}
+                          onClick={() => handleDeleteEmployee(summary.employee.id)}
+                        >
+                          削除
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
                   </Table.Td>
                 </Table.Tr>
               );
@@ -255,10 +323,27 @@ export default function DashboardPage() {
         )}
         {!loading && filteredSummaries.length === 0 && (
           <Card padding="md" radius="md" withBorder mt="md">
-            <Text c="dimmed">該当するデータがありません。日付やフィルタを変更してください。</Text>
+            <Text c="dimmed">該当するデータがありません。</Text>
           </Card>
         )}
       </Card>
+
+      <EmployeeModal
+        opened={createModalOpen || !!editingEmployee}
+        onClose={() => {
+          setCreateModalOpen(false);
+          setEditingEmployee(null);
+        }}
+        onSuccess={fetchData}
+        employee={editingEmployee}
+      />
+
+      <UserManagementModal
+        opened={!!userModalEmployee}
+        onClose={() => setUserModalEmployee(null)}
+        onSuccess={fetchData}
+        employee={userModalEmployee}
+      />
     </Stack>
   );
 }

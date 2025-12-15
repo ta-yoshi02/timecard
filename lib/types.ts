@@ -1,8 +1,25 @@
+export type User = {
+  id: string;
+  loginId: string;
+  role: 'ADMIN' | 'EMPLOYEE';
+  employeeId?: string | null;
+};
+
+export type WageHistory = {
+  id: string;
+  employeeId: string;
+  hourlyRate: number;
+  effectiveDate: Date;
+};
+
 export type Employee = {
   id: string;
   name: string;
   role: string;
+  jobRole: string;
   hourlyRate: number;
+  user?: User | null;
+  wageHistory?: WageHistory[];
 };
 
 export type AttendanceRecord = {

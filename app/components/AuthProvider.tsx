@@ -9,6 +9,7 @@ import React, {
   useEffect,
   useMemo,
   useState,
+  useRef,
 } from 'react';
 
 export type AuthUser = {
@@ -23,6 +24,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   employee: Employee | null;
   loading: boolean;
+  csrfToken: string | null;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
 };
@@ -31,6 +33,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   employee: null,
   loading: true,
+  csrfToken: null,
   refresh: async () => { },
   logout: async () => { },
 });
@@ -39,10 +42,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
+  const [csrfToken, setCsrfToken] = useState<string | null>(null);
+  const csrfTokenRef = useRef<string | null>(null);
+
+  // Update ref whenever state changes so interceptor can access it
+  useEffect(() => {
+    csrfTokenRef.current = csrfToken;
+  }, [csrfToken]);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
+      // 1. Fetch CSRF Token
+      const csrfRes = await fetch('/api/auth/csrf');
+      if (csrfRes.ok) {
+        const { token } = await csrfRes.json();
+        setCsrfToken(token);
+      }
+
+      // 2. Fetch User Session
       const res = await fetch('/api/auth/me');
       if (!res.ok) throw new Error('failed to fetch session');
       const data = await res.json();
@@ -64,10 +82,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
+      const resource = args[0];
+      let config = args[1];
+
+      // Auto-inject CSRF token for mutation requests
+      if (csrfTokenRef.current && config && typeof config === 'object') {
+        const method = config.method?.toUpperCase();
+        if (method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+          config = {
+            ...config,
+            headers: {
+              ...config.headers,
+              'X-CSRF-Token': csrfTokenRef.current,
+            }
+          };
+          args[1] = config;
+        }
+      } else if (csrfTokenRef.current && !config && args.length === 1) {
+        // Case where fetch is called with just URL, but we want to be safe? 
+        // Usually fetch(url) is GET. So we ignore.
+      }
+
       const response = await originalFetch(...args);
       if (response.status === 401) {
         // Avoid infinite loop if logout itself returns 401
-        const url = args[0].toString();
+        const url = resource.toString();
         if (!url.includes('/api/auth/logout')) {
           setUser(null);
           setEmployee(null);
@@ -87,6 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setUser(null);
       setEmployee(null);
+      // We might want to clear CSRF token too, or refresh it
     }
   }, []);
 
@@ -95,10 +135,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       user,
       employee,
       loading,
+      csrfToken,
       refresh,
       logout,
     }),
-    [user, employee, loading, refresh, logout],
+    [user, employee, loading, csrfToken, refresh, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

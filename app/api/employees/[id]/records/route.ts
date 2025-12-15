@@ -30,6 +30,7 @@ export async function GET(
 
   const employee = await prisma.employee.findUnique({
     where: { id },
+    include: { wageHistory: { orderBy: { effectiveDate: 'desc' } } },
   });
 
   if (!employee) {

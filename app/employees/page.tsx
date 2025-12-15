@@ -123,7 +123,7 @@ export default function EmployeesPage() {
                     <Text fw={600}>{summary.employee.name}</Text>
                   </Link>
                 </Table.Td>
-                <Table.Td>{summary.employee.role}</Table.Td>
+                <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
                 <Table.Td>{summary.records.length}日</Table.Td>
                 <Table.Td>{formatHoursToHM(summary.totalHours)}</Table.Td>
                 <Table.Td>{formatCurrency(summary.estimatedPay)}</Table.Td>
@@ -177,7 +177,7 @@ export default function EmployeesPage() {
                     <Text fw={600}>{summary.employee.name}</Text>
                   </Link>
                 </Table.Td>
-                <Table.Td>{summary.employee.role}</Table.Td>
+                <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
                 <Table.Td>{summary.monthly.records.length}日</Table.Td>
                 <Table.Td>{formatHoursToHM(summary.monthly.totalHours)}</Table.Td>
                 <Table.Td>{formatCurrency(summary.monthly.estimatedPay)}</Table.Td>

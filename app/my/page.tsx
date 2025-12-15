@@ -11,9 +11,11 @@ import {
   TextInput,
   Title,
   Button,
+  Menu,
+  ActionIcon,
 } from '@mantine/core';
 
-import { IconPlus } from '@tabler/icons-react';
+import { IconPlus, IconSettings, IconLogout, IconKey } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import dayjs from 'dayjs';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -26,9 +28,10 @@ import { LiveClock } from './components/LiveClock';
 import { AnalogClock } from './components/AnalogClock';
 import { notifications } from '@mantine/notifications';
 import { CreateAttendanceModal } from './components/CreateAttendanceModal';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 
 export default function MyAttendancePage() {
-  const { user, employee, loading: authLoading } = useAuth();
+  const { user, employee, loading: authLoading, logout } = useAuth();
   useRequireRole('EMPLOYEE');
 
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
@@ -38,6 +41,7 @@ export default function MyAttendancePage() {
   >(null);
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
   const [creating, setCreating] = useState(false);
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
 
   const fetchRecords = useCallback(async () => {
     if (!user || user.role !== 'EMPLOYEE') return;
@@ -192,9 +196,27 @@ export default function MyAttendancePage() {
               {dayjs().format('YYYY年M月D日 (ddd)')}
             </Text>
           </div>
-          <Button variant="subtle" size="sm" onClick={() => todayRecord && setEditingRecord(todayRecord)}>
-            本日の打刻を修正
-          </Button>
+          <Group>
+            <Button variant="subtle" size="sm" onClick={() => todayRecord && setEditingRecord(todayRecord)}>
+              本日の打刻を修正
+            </Button>
+            <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <ActionIcon variant="light" size="lg">
+                  <IconSettings size={20} />
+                </ActionIcon>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item leftSection={<IconKey size={14} />} onClick={() => setPasswordModalOpen(true)}>
+                  パスワード変更
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item leftSection={<IconLogout size={14} />} color="red" onClick={logout}>
+                  ログアウト
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
 
         <Grid>
@@ -270,6 +292,11 @@ export default function MyAttendancePage() {
           opened={creating}
           onClose={() => setCreating(false)}
           onSuccess={fetchRecords}
+        />
+
+        <ChangePasswordModal
+          opened={passwordModalOpen}
+          onClose={() => setPasswordModalOpen(false)}
         />
       </Stack>
     </Container>

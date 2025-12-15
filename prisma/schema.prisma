@@ -7,12 +7,25 @@ datasource db {
 }
 
 model Employee {
-  id         String              @id @default(cuid())
-  name       String
-  role       String
-  hourlyRate Int
-  records    AttendanceRecord[]
-  user       User?
+  id          String        @id @default(cuid())
+  name        String
+  role        String // System role mirror (legacy/compatibility)
+  jobRole     String        @default("STAFF") // Kitchen, Hall, etc.
+  hourlyRate  Int
+  records     AttendanceRecord[]
+  user        User?
+  wageHistory WageHistory[]
+}
+
+model WageHistory {
+  id          String   @id @default(cuid())
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employeeId  String
+  hourlyRate  Int
+  effectiveDate DateTime // Stored as YYYY-MM-01
+  createdAt   DateTime @default(now())
+
+  @@unique([employeeId, effectiveDate])
 }
 
 model AttendanceRecord {
