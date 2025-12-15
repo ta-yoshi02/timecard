@@ -31,8 +31,8 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   employee: null,
   loading: true,
-  refresh: async () => {},
-  logout: async () => {},
+  refresh: async () => { },
+  logout: async () => { },
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -60,6 +60,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      if (response.status === 401) {
+        // Avoid infinite loop if logout itself returns 401
+        const url = args[0].toString();
+        if (!url.includes('/api/auth/logout')) {
+          setUser(null);
+          setEmployee(null);
+        }
+      }
+      return response;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, []);
 
   const logout = useCallback(async () => {
     try {
