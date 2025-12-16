@@ -9,8 +9,8 @@
 - **スタッフ一覧・詳細**: 直近7日と月次サマリー、概算給与、異常件数を確認。個別ページで日次の打刻・休憩・メモを確認。
 - **従業員セルフ打刻**: ログインした本人が出勤・休憩開始/終了・退勤を押せる。
   - **ライブ時計**: 秒単位で現在時刻を表示するデジタル時計とアナログ時計。
-  - **打刻修正**: 今日の打刻をモーダルで修正可能（HH:mm形式バリデーション付き）。
-  - **履歴閲覧**: 直近14日の履歴を確認可能。
+  - **打刻修正**: 今日の打刻をモーダルで修正可能（HH:mm形式バリデーション付き、APIは日付制限なし）。
+  - **履歴閲覧**: UIは直近14日の履歴を表示・編集、より過去は管理画面/APIで対応可能。
 - **役割別ルーティング**: 管理者は `/admin` ダッシュボード、従業員は `/my` 打刻ページへ自動誘導。
 - **セッション署名付き簡易ログイン**: 1時間TTLのセッションと Prisma/PostgreSQL でデータ管理。
 
@@ -37,24 +37,22 @@ npm run dev   # http://localhost:3000
 
 ## サンプルアカウント（seed）
 - 管理者: `admin / adminpass`
-- 従業員: `hanako / password`（山田花子に紐付け）
-- 佐藤太郎は従業員として登録されていますが、User紐付けはしていません。ログインさせるには `User` に `employeeId` と `loginId/passwordHash/role: EMPLOYEE` を追加してください。
+- 従業員: `hanako / hanako`（山田花子に紐付け）
+- 従業員: `taro / taro`（佐藤太郎に紐付け）
 
 ## 使い方の流れ
 - **管理者**: `/login` → `/admin` ダッシュボードへ遷移。
   - 日付範囲を選択し、打刻状況や異常を確認。
   - 「打刻異常」「休憩不足」フィルタで問題のあるスタッフを抽出。
   - スタッフ名をクリックして詳細ページへ。
+  - **スタッフ管理**: `/employees` でスタッフの追加・編集、時給履歴の管理、パスワードリセットが可能。
 - **従業員**: `/login` → `/my` に遷移。  
   - **出勤前/退勤後**: 出勤ボタン or 修正。  
   - **勤務中**: 休憩開始、修正、退勤。  
   - **休憩中**: 休憩終了、修正。  
-  - **修正**: 「本日の打刻を修正」からモーダルで出勤・休憩開始/終了・退勤・メモを手入力して保存。
+  - **修正**: 「本日の打刻を修正」からモーダルで出勤・休憩開始/終了・退勤・メモを手入力して保存。UIは直近14日分を扱い、APIは日付制限なく追加/更新が可能。
+  - **設定**: パスワード変更が可能。
 
-## セキュリティメモ
-- パスワードは scrypt + ソルトでハッシュ化。照合は timing-safe 比較。
-- セッションは HMAC-SHA256 署名の httpOnly Cookie（1h TTL）。`AUTH_SECRET` は必ず十分長い乱数を設定。
-- Prisma はプレースホルダーでクエリを発行。生SQLは使用していません。
 
 ## Prisma 接続について
 - 直接接続: `DATABASE_URL` に Postgres 直結URLを設定（`PRISMA_ACCELERATE_URL` は空でOK）。
@@ -64,6 +62,7 @@ npm run dev   # http://localhost:3000
 - `npm run dev` / `npm run build` / `npm start`
 - `npm run lint`
 - `npm run db:generate` / `npm run db:push` / `npm run db:seed`
+- `npx tsx scripts/test-attendance.ts` (勤怠計算ロジックのテスト)
 
 ## デプロイ (Vercel)
 1. リポジトリを GitHub 等にプッシュ
@@ -75,7 +74,7 @@ npm run dev   # http://localhost:3000
 - Next.js App Router (16) / TypeScript / Mantine 8
 - レイアウト: `app/components/AppLayout.tsx` (AppShell + ナビゲーション)
 - データ/ロジック: Prisma (`lib/prisma.ts`, `prisma/schema.prisma`, `prisma/seed.js`)、型は `lib/types.ts`、集計は `lib/attendance.ts`
-- API: `app/api/attendance`, `app/api/employees`, `app/api/employees/[id]/records`
+- API: `app/api/attendance`, `app/api/employees`, `app/api/employees/[id]/records`, `app/api/clock`
 - ページ: `/admin` ダッシュボード、`/employees` スタッフ一覧、`/employees/[id]` 個別詳細、`/my` 従業員用ページ
 
 ## ドキュメント

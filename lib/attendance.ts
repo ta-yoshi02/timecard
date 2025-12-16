@@ -15,11 +15,23 @@ const NIGHT_SHIFT_END_HOUR = 5;
 const OVERTIME_RATE_MULTIPLIER = 0.25;
 const NIGHT_RATE_MULTIPLIER = 0.25;
 
+export const isValidTimeFormat = (timeStr: string): boolean => {
+  return /^([0-4]?[0-9]):[0-5][0-9]$/.test(timeStr);
+};
+
+export const parseTime = (dateStr: string, timeStr: string) => {
+  const [h, m] = timeStr.split(":").map(Number);
+  return dayjs(dateStr).startOf("day").add(h, "hour").add(m, "minute");
+};
+
 const getBreakMinutes = (record: AttendanceRecord) => {
   if (typeof record.breakMinutes === "number") return record.breakMinutes;
   if (record.breakStart && record.breakEnd) {
-    const start = dayjs(`${record.date}T${record.breakStart}`);
-    const end = dayjs(`${record.date}T${record.breakEnd}`);
+    // Validate format before parsing to avoid invalid date issues if upstream validation missed it
+    if (!isValidTimeFormat(record.breakStart) || !isValidTimeFormat(record.breakEnd)) return 0;
+
+    const start = parseTime(record.date, record.breakStart);
+    const end = parseTime(record.date, record.breakEnd);
     if (start.isValid() && end.isValid() && end.isAfter(start)) {
       return end.diff(start, "minute");
     }
@@ -31,8 +43,8 @@ export const calculateDailyHours = (
   record: AttendanceRecord,
 ): number | null => {
   if (!record.clockIn || !record.clockOut) return null;
-  const start = dayjs(`${record.date}T${record.clockIn}`);
-  const end = dayjs(`${record.date}T${record.clockOut}`);
+  const start = parseTime(record.date, record.clockIn);
+  const end = parseTime(record.date, record.clockOut);
   if (!start.isValid() || !end.isValid()) return null;
   const totalMinutes = end.diff(start, "minute");
   const netMinutes = totalMinutes - getBreakMinutes(record);
@@ -45,10 +57,21 @@ const calculateNightMinutes = (
   end: dayjs.Dayjs,
 ): number => {
   // Window 1: same-day 22:00-24:00, Window 2: next-day 00:00-05:00
+  // Note: start/end are full Date objects now, so we can compare directly against windows relative to the start date
   const startDay = start.startOf("day");
   const nightStart = startDay.add(NIGHT_SHIFT_START_HOUR, "hour");
   const midnight = startDay.add(1, "day");
   const nextDayNightEnd = midnight.add(NIGHT_SHIFT_END_HOUR, "hour");
+
+  // If the shift is very long (e.g. 48h), this simple logic might fail, but for < 48h it's okay.
+  // We can just iterate days if needed, but for now let's stick to the original logic's scope, just fixed for >24h inputs.
+  // Actually, if input is 26:00, that is 02:00 next day.
+  // The original logic used:
+  // window1 = overlap(nightStart, midnight)
+  // window2 = overlap(midnight, nextDayNightEnd)
+  // This covers 22:00 - 05:00 (next day).
+  // If a shift goes to 29:00 (05:00 next day), it works.
+  // If a shift goes to 30:00 (06:00 next day), it stops counting at 05:00. Correct.
 
   const overlap = (rangeStart: dayjs.Dayjs, rangeEnd: dayjs.Dayjs) => {
     const s = rangeStart.isAfter(start) ? rangeStart : start;
@@ -66,8 +89,8 @@ export const detectIssues = (record: AttendanceRecord): AttendanceIssue[] => {
   if (!record.clockIn) issues.push("missingClockIn");
   if (!record.clockOut) issues.push("missingClockOut");
 
-  const start = record.clockIn ? dayjs(`${record.date}T${record.clockIn}`) : null;
-  const end = record.clockOut ? dayjs(`${record.date}T${record.clockOut}`) : null;
+  const start = record.clockIn ? parseTime(record.date, record.clockIn) : null;
+  const end = record.clockOut ? parseTime(record.date, record.clockOut) : null;
   const rawDuration = start && end ? end.diff(start, "minute") : null;
   const breakMinutes = getBreakMinutes(record);
 
@@ -106,8 +129,8 @@ export const calculatePay = (
     return { hours: 0, pay: 0, overtimeMinutes: 0, nightMinutes: 0 };
   }
 
-  const start = dayjs(`${record.date}T${record.clockIn}`);
-  const end = dayjs(`${record.date}T${record.clockOut}`);
+  const start = parseTime(record.date, record.clockIn);
+  const end = parseTime(record.date, record.clockOut);
   if (!start.isValid() || !end.isValid()) {
     return { hours: 0, pay: 0, overtimeMinutes: 0, nightMinutes: 0 };
   }

@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { SESSION_COOKIE_NAME, readSessionToken } from '@/lib/auth';
+import { Prisma } from '@prisma/client';
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -69,8 +70,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ employee: result });
   } catch (e) {
     console.error(e);
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      return NextResponse.json(
+        { error: '指定されたログインIDは既に使用されています。別のIDを指定してください。' },
+        { status: 409 },
+      );
+    }
     return NextResponse.json(
-      { error: '従業員の作成に失敗しました。ログインIDが重複している可能性があります。' },
+      { error: '従業員の作成に失敗しました。' },
       { status: 500 },
     );
   }

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dayjs from 'dayjs';
 import prisma from '@/lib/prisma';
 import { SESSION_COOKIE_NAME, readSessionToken } from '@/lib/auth';
+import { isValidTimeFormat } from '@/lib/attendance';
 
 const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
 
@@ -69,7 +70,14 @@ export async function POST(request: NextRequest) {
     note: string | null;
   } | null = null;
 
-  if (action === 'update' && recordId) {
+  if (action === 'update') {
+    if (!recordId) {
+      return NextResponse.json(
+        { error: 'レコードIDが必要です' },
+        { status: 400 },
+      );
+    }
+
     record = await prisma.attendanceRecord.findUnique({
       where: { id: recordId },
     });
@@ -142,6 +150,19 @@ export async function POST(request: NextRequest) {
     const inputClockOut = body?.clockOut as string | undefined;
     const inputBreakStart = body?.breakStart as string | undefined;
     const inputBreakEnd = body?.breakEnd as string | undefined;
+
+    if (inputClockIn && !isValidTimeFormat(inputClockIn)) {
+      return NextResponse.json({ error: '出勤時間の形式が不正です (HH:mm)' }, { status: 400 });
+    }
+    if (inputClockOut && !isValidTimeFormat(inputClockOut)) {
+      return NextResponse.json({ error: '退勤時間の形式が不正です (HH:mm)' }, { status: 400 });
+    }
+    if (inputBreakStart && !isValidTimeFormat(inputBreakStart)) {
+      return NextResponse.json({ error: '休憩開始時間の形式が不正です (HH:mm)' }, { status: 400 });
+    }
+    if (inputBreakEnd && !isValidTimeFormat(inputBreakEnd)) {
+      return NextResponse.json({ error: '休憩終了時間の形式が不正です (HH:mm)' }, { status: 400 });
+    }
 
     // Basic validation for times if provided?
     // Let's reuse the update logic or just create and then update?
@@ -343,10 +364,34 @@ export async function POST(request: NextRequest) {
       breakMinutes: minutes,
     });
   } else if (action === 'update') {
-    const inputClockIn = body?.clockIn as string | undefined;
-    const inputClockOut = body?.clockOut as string | undefined;
-    const inputBreakStart = body?.breakStart as string | undefined;
-    const inputBreakEnd = body?.breakEnd as string | undefined;
+    const clockIn = body.clockIn as string | undefined;
+    const clockOut = body.clockOut as string | undefined;
+    const breakStart = body.breakStart as string | undefined;
+    const breakEnd = body.breakEnd as string | undefined;
+    const note = body.note as string | undefined;
+
+    // Validation
+    if (clockIn && !isValidTimeFormat(clockIn)) {
+      return NextResponse.json({ error: '出勤時間の形式が不正です (HH:mm)' }, { status: 400 });
+    }
+    if (clockOut && !isValidTimeFormat(clockOut)) {
+      return NextResponse.json({ error: '退勤時間の形式が不正です (HH:mm)' }, { status: 400 });
+    }
+    if (breakStart && !isValidTimeFormat(breakStart)) {
+      return NextResponse.json({ error: '休憩開始時間の形式が不正です (HH:mm)' }, { status: 400 });
+    }
+    if (breakEnd && !isValidTimeFormat(breakEnd)) {
+      return NextResponse.json({ error: '休憩終了時間の形式が不正です (HH:mm)' }, { status: 400 });
+    }
+
+    // record is already fetched and verified at the beginning of the function
+    if (!record) {
+      return NextResponse.json({ error: 'レコードが見つかりません' }, { status: 404 });
+    }
+
+    // Update currentRecord to the found record for consistency
+    currentRecord = record;
+
     const data: {
       clockIn?: string | null;
       clockOut?: string | null;
@@ -357,10 +402,10 @@ export async function POST(request: NextRequest) {
     } = {
       note: note ?? record.note,
     };
-    if (inputClockIn !== undefined) data.clockIn = inputClockIn || null;
-    if (inputClockOut !== undefined) data.clockOut = inputClockOut || null;
-    if (inputBreakStart !== undefined) data.breakStart = inputBreakStart || null;
-    if (inputBreakEnd !== undefined) data.breakEnd = inputBreakEnd || null;
+    if (clockIn !== undefined) data.clockIn = clockIn || null;
+    if (clockOut !== undefined) data.clockOut = clockOut || null;
+    if (breakStart !== undefined) data.breakStart = breakStart || null;
+    if (breakEnd !== undefined) data.breakEnd = breakEnd || null;
 
     // Recalculate breakMinutes if both provided (or existing) are valid
     const patchedRecord = {
