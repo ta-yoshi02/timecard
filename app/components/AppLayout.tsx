@@ -1,6 +1,6 @@
 'use client';
 
-import { AppShell, Burger, Button, Group, NavLink, Stack, Text, Title } from '@mantine/core';
+import { AppShell, Burger, Button, Group, NavLink, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -88,25 +88,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
             <div>
-              <Title order={4}>勤怠チェックダッシュボード</Title>
-            </div>
-          </Group>
-          <Group gap="xs">
-            {userLabel && (
-              <Text size="sm" c="dimmed">
+              <Text fw={700} size="md" visibleFrom="xs">勤怠チェックダッシュボード</Text>
+              <Text fw={700} size="xs" hiddenFrom="xs">勤怠チェックダッシュボード</Text>
+                </div>
+              </Group>
+                <Group gap="xs">
+                  {userLabel && (
+                <Text size="xs" c="dimmed">
                 {userLabel}
               </Text>
-            )}
+                )}
             {!loading && user && (
-              <Button variant="light" size="xs" onClick={handleLogout}>
-                ログアウト
-              </Button>
+                  <Button variant="light" size="xs" onClick={handleLogout}>
+                  ログアウト
+                </Button>
             )}
-            {!loading && !user && (
-              <Button variant="light" size="xs" component={Link} href="/login">
-                ログイン
-              </Button>
-            )}
+                  {!loading  && !user && (
+                <Button variant="light" size="xs" component={Link} href="/login">
+                      ログイン
+                </Button>
+              )}
           </Group>
         </Group>
       </AppShell.Header>

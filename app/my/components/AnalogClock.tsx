@@ -9,16 +9,28 @@ type Props = {
 };
 
 export function AnalogClock({ size = 200 }: Props) {
+    const [mounted, setMounted] = useState(false);
     const [value, setValue] = useState<Date>(() => new Date());
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setMounted(true);
         const tick = () => setValue(new Date());
         const timer = setInterval(tick, 1000);
-        tick();
         return () => {
             clearInterval(timer);
         };
     }, []);
+
+    if (!mounted) {
+        return (
+            <Card padding="md" radius="md" withBorder mb="md">
+                <Stack align="center" gap="xs">
+                    <div style={{ width: size, height: size }} />
+                </Stack>
+            </Card>
+        );
+    }
 
     return (
         <Card padding="md" radius="md" withBorder mb="md">

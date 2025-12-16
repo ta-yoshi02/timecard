@@ -58,51 +58,53 @@ export function AttendanceHistory({ records, loading, onEdit, headerAction }: Pr
                 </div>
                 {headerAction}
             </Group>
-            <Table verticalSpacing="sm" highlightOnHover>
-                <Table.Thead>
-                    <Table.Tr>
-                        <Table.Th>日付</Table.Th>
-                        <Table.Th>出勤</Table.Th>
-                        <Table.Th>退勤</Table.Th>
-                        <Table.Th>休憩</Table.Th>
-                        <Table.Th>実働</Table.Th>
-                        <Table.Th>ステータス</Table.Th>
-                    </Table.Tr>
-                </Table.Thead>
-                <Table.Tbody>
-                    {records.map((record) => {
-                        const issues = detectIssues(record);
-                        const hours = calculateDailyHours(record);
-                        return (
-                            <Table.Tr
-                                key={record.id}
-                                onClick={() => onEdit?.(record)}
-                                style={{ cursor: onEdit ? 'pointer' : 'default' }}
-                            >
-                                <Table.Td>
-                                    <Text size="sm" fw={500}>
-                                        {dayjs(record.date).format('M/D')}
-                                    </Text>
-                                    <Text size="xs" c="dimmed">
-                                        {dayjs(record.date).format('ddd')}
-                                    </Text>
-                                </Table.Td>
-                                <Table.Td>{record.clockIn ?? '-'}</Table.Td>
-                                <Table.Td>{record.clockOut ?? '-'}</Table.Td>
-                                <Table.Td>
-                                    {typeof record.breakMinutes === 'number' ? `${record.breakMinutes}分` : '-'}
-                                </Table.Td>
-                                <Table.Td>
-                                    <Text fw={500}>{formatHours(hours)}</Text>
-                                </Table.Td>
-                                <Table.Td>
-                                    <StatusBadges issues={issues} />
-                                </Table.Td>
-                            </Table.Tr>
-                        );
-                    })}
-                </Table.Tbody>
-            </Table>
+            <Table.ScrollContainer minWidth={600}>
+                <Table verticalSpacing="sm" highlightOnHover>
+                    <Table.Thead>
+                        <Table.Tr>
+                            <Table.Th>日付</Table.Th>
+                            <Table.Th>出勤</Table.Th>
+                            <Table.Th>退勤</Table.Th>
+                            <Table.Th>休憩</Table.Th>
+                            <Table.Th>実働</Table.Th>
+                            <Table.Th>ステータス</Table.Th>
+                        </Table.Tr>
+                    </Table.Thead>
+                    <Table.Tbody>
+                        {records.map((record) => {
+                            const issues = detectIssues(record);
+                            const hours = calculateDailyHours(record);
+                            return (
+                                <Table.Tr
+                                    key={record.id}
+                                    onClick={() => onEdit?.(record)}
+                                    style={{ cursor: onEdit ? 'pointer' : 'default' }}
+                                >
+                                    <Table.Td>
+                                        <Text size="sm" fw={500}>
+                                            {dayjs(record.date).format('M/D')}
+                                        </Text>
+                                        <Text size="xs" c="dimmed">
+                                            {dayjs(record.date).format('ddd')}
+                                        </Text>
+                                    </Table.Td>
+                                    <Table.Td>{record.clockIn ?? '-'}</Table.Td>
+                                    <Table.Td>{record.clockOut ?? '-'}</Table.Td>
+                                    <Table.Td>
+                                        {typeof record.breakMinutes === 'number' ? `${record.breakMinutes}分` : '-'}
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <Text fw={500}>{formatHours(hours)}</Text>
+                                    </Table.Td>
+                                    <Table.Td>
+                                        <StatusBadges issues={issues} />
+                                    </Table.Td>
+                                </Table.Tr>
+                            );
+                        })}
+                    </Table.Tbody>
+                </Table>
+            </Table.ScrollContainer>
         </Card>
     );
 }

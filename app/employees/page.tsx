@@ -102,40 +102,42 @@ export default function EmployeesPage() {
             </Text>
           </div>
         </Group>
-        <Table verticalSpacing="sm" highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>スタッフ</Table.Th>
-              <Table.Th>役割</Table.Th>
-              <Table.Th>勤務日数</Table.Th>
-              <Table.Th>合計時間</Table.Th>
-              <Table.Th>概算給与(7日)</Table.Th>
-              <Table.Th>打刻異常</Table.Th>
-              <Table.Th>残業</Table.Th>
-              <Table.Th>ステータス</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {summaries.map((summary) => (
-              <Table.Tr key={summary.employee.id}>
-                <Table.Td>
-                  <Link href={`/employees/${summary.employee.id}`}>
-                    <Text fw={600}>{summary.employee.name}</Text>
-                  </Link>
-                </Table.Td>
-                <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
-                <Table.Td>{summary.records.length}日</Table.Td>
-                <Table.Td>{formatHoursToHM(summary.totalHours)}</Table.Td>
-                <Table.Td>{formatCurrency(summary.estimatedPay)}</Table.Td>
-                <Table.Td>{summary.missingCount} 件</Table.Td>
-                <Table.Td>{summary.overworkCount} 件</Table.Td>
-                <Table.Td>
-                  <StatusBadges issues={summary.issues} />
-                </Table.Td>
+        <Table.ScrollContainer minWidth={800}>
+          <Table verticalSpacing="sm" highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>スタッフ</Table.Th>
+                <Table.Th>役割</Table.Th>
+                <Table.Th>勤務日数</Table.Th>
+                <Table.Th>合計時間</Table.Th>
+                <Table.Th>概算給与(7日)</Table.Th>
+                <Table.Th>打刻異常</Table.Th>
+                <Table.Th>残業</Table.Th>
+                <Table.Th>ステータス</Table.Th>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {summaries.map((summary) => (
+                <Table.Tr key={summary.employee.id}>
+                  <Table.Td>
+                    <Link href={`/employees/${summary.employee.id}`}>
+                      <Text fw={600}>{summary.employee.name}</Text>
+                    </Link>
+                  </Table.Td>
+                  <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
+                  <Table.Td>{summary.records.length}日</Table.Td>
+                  <Table.Td>{formatHoursToHM(summary.totalHours)}</Table.Td>
+                  <Table.Td>{formatCurrency(summary.estimatedPay)}</Table.Td>
+                  <Table.Td>{summary.missingCount} 件</Table.Td>
+                  <Table.Td>{summary.overworkCount} 件</Table.Td>
+                  <Table.Td>
+                    <StatusBadges issues={summary.issues} />
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       </Card>
 
       <Card shadow="xs" padding="md" radius="md" withBorder>
@@ -156,40 +158,42 @@ export default function EmployeesPage() {
             clearable={false}
           />
         </Group>
-        <Table verticalSpacing="sm" highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>スタッフ</Table.Th>
-              <Table.Th>役割</Table.Th>
-              <Table.Th>勤務日数(選択月)</Table.Th>
-              <Table.Th>合計時間(選択月)</Table.Th>
-              <Table.Th>概算給与(選択月)</Table.Th>
-              <Table.Th>打刻異常(選択月)</Table.Th>
-              <Table.Th>残業(選択月)</Table.Th>
-              <Table.Th>ステータス(選択月)</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {summaries.map((summary) => (
-              <Table.Tr key={`${summary.employee.id}-monthly`}>
-                <Table.Td>
-                  <Link href={`/employees/${summary.employee.id}`}>
-                    <Text fw={600}>{summary.employee.name}</Text>
-                  </Link>
-                </Table.Td>
-                <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
-                <Table.Td>{summary.monthly.records.length}日</Table.Td>
-                <Table.Td>{formatHoursToHM(summary.monthly.totalHours)}</Table.Td>
-                <Table.Td>{formatCurrency(summary.monthly.estimatedPay)}</Table.Td>
-                <Table.Td>{summary.monthly.missingCount} 件</Table.Td>
-                <Table.Td>{summary.monthly.overworkCount} 件</Table.Td>
-                <Table.Td>
-                  <StatusBadges issues={summary.monthly.issues} />
-                </Table.Td>
+        <Table.ScrollContainer minWidth={800}>
+          <Table verticalSpacing="sm" highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>スタッフ</Table.Th>
+                <Table.Th>役割</Table.Th>
+                <Table.Th>勤務日数(選択月)</Table.Th>
+                <Table.Th>合計時間(選択月)</Table.Th>
+                <Table.Th>概算給与(選択月)</Table.Th>
+                <Table.Th>打刻異常(選択月)</Table.Th>
+                <Table.Th>残業(選択月)</Table.Th>
+                <Table.Th>ステータス(選択月)</Table.Th>
               </Table.Tr>
-            ))}
-          </Table.Tbody>
-        </Table>
+            </Table.Thead>
+            <Table.Tbody>
+              {summaries.map((summary) => (
+                <Table.Tr key={`${summary.employee.id}-monthly`}>
+                  <Table.Td>
+                    <Link href={`/employees/${summary.employee.id}`}>
+                      <Text fw={600}>{summary.employee.name}</Text>
+                    </Link>
+                  </Table.Td>
+                  <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
+                  <Table.Td>{summary.monthly.records.length}日</Table.Td>
+                  <Table.Td>{formatHoursToHM(summary.monthly.totalHours)}</Table.Td>
+                  <Table.Td>{formatCurrency(summary.monthly.estimatedPay)}</Table.Td>
+                  <Table.Td>{summary.monthly.missingCount} 件</Table.Td>
+                  <Table.Td>{summary.monthly.overworkCount} 件</Table.Td>
+                  <Table.Td>
+                    <StatusBadges issues={summary.monthly.issues} />
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
       </Card>
 
       {error && (

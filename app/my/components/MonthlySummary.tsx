@@ -147,50 +147,52 @@ export function MonthlySummary({
             </Badge>
           </Group>
 
-          <Table verticalSpacing="sm" highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>日付</Table.Th>
-                <Table.Th>出勤</Table.Th>
-                <Table.Th>退勤</Table.Th>
-                <Table.Th>休憩</Table.Th>
-                <Table.Th>実働</Table.Th>
-                <Table.Th>日額(概算)</Table.Th>
-                <Table.Th>メモ</Table.Th>
-                <Table.Th>ステータス</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {records.map((record) => {
-                const issues = detectIssues(record);
-                const hours = calculateDailyHours(record);
-                const dayPay =
-                  typeof hourlyRate === 'number'
-                    ? calculatePay(record, hourlyRate).pay
-                    : undefined;
-                return (
-                  <Table.Tr key={record.id}>
-                    <Table.Td>
-                      <Text fw={600}>{dayjs(record.date).format('M/D')}</Text>
-                    </Table.Td>
-                    <Table.Td>{record.clockIn ?? '-'}</Table.Td>
-                    <Table.Td>{record.clockOut ?? '-'}</Table.Td>
-                    <Table.Td>
-                      {typeof record.breakMinutes === 'number'
-                        ? `${record.breakMinutes}分`
-                        : '-'}
-                    </Table.Td>
-                    <Table.Td>{formatHours(hours)}</Table.Td>
-                    <Table.Td>{formatCurrency(dayPay)}</Table.Td>
-                    <Table.Td>{record.note || '-'}</Table.Td>
-                    <Table.Td>
-                      <StatusBadges issues={issues} />
-                    </Table.Td>
-                  </Table.Tr>
-                );
-              })}
-            </Table.Tbody>
-          </Table>
+          <Table.ScrollContainer minWidth={800}>
+            <Table verticalSpacing="sm" highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>日付</Table.Th>
+                  <Table.Th>出勤</Table.Th>
+                  <Table.Th>退勤</Table.Th>
+                  <Table.Th>休憩</Table.Th>
+                  <Table.Th>実働</Table.Th>
+                  <Table.Th>日額(概算)</Table.Th>
+                  <Table.Th>メモ</Table.Th>
+                  <Table.Th>ステータス</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {records.map((record) => {
+                  const issues = detectIssues(record);
+                  const hours = calculateDailyHours(record);
+                  const dayPay =
+                    typeof hourlyRate === 'number'
+                      ? calculatePay(record, hourlyRate).pay
+                      : undefined;
+                  return (
+                    <Table.Tr key={record.id}>
+                      <Table.Td>
+                        <Text fw={600}>{dayjs(record.date).format('M/D')}</Text>
+                      </Table.Td>
+                      <Table.Td>{record.clockIn ?? '-'}</Table.Td>
+                      <Table.Td>{record.clockOut ?? '-'}</Table.Td>
+                      <Table.Td>
+                        {typeof record.breakMinutes === 'number'
+                          ? `${record.breakMinutes}分`
+                          : '-'}
+                      </Table.Td>
+                      <Table.Td>{formatHours(hours)}</Table.Td>
+                      <Table.Td>{formatCurrency(dayPay)}</Table.Td>
+                      <Table.Td>{record.note || '-'}</Table.Td>
+                      <Table.Td>
+                        <StatusBadges issues={issues} />
+                      </Table.Td>
+                    </Table.Tr>
+                  );
+                })}
+              </Table.Tbody>
+            </Table>
+          </Table.ScrollContainer>
         </>
       )}
     </Card>

@@ -3,7 +3,7 @@
 import { Badge, Button, Card, Group, Table, Text, Title, Modal, Stack, TextInput, Textarea, Select, Switch, NumberInput, Divider } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { MonthPickerInput, DateInput } from '@mantine/dates';
-import { IconPlus, IconKey, IconCurrencyYen, IconUser } from '@tabler/icons-react';
+import { IconPlus, IconKey, IconCurrencyYen, IconUser, IconEdit } from '@tabler/icons-react';
 import dayjs from 'dayjs';
 import { useParams, useRouter } from 'next/navigation';
 import StatusBadges from '../../components/StatusBadges';
@@ -482,60 +482,67 @@ export default function EmployeeDetailPage() {
           </Button>
         </Group>
 
-        <Table verticalSpacing="sm" highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>日付</Table.Th>
-              <Table.Th>出勤</Table.Th>
-              <Table.Th>退勤</Table.Th>
-              <Table.Th>実働</Table.Th>
-              <Table.Th>休憩</Table.Th>
-              <Table.Th>適用時給</Table.Th>
-              <Table.Th>日額(概算)</Table.Th>
-              <Table.Th>メモ</Table.Th>
-              <Table.Th>ステータス</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {records.map((record, index) => {
-              const issues = recordIssues[index];
-              const hours = calculateDailyHours(record);
-              const rate = getHourlyRate(record.date, employee.wageHistory, employee.hourlyRate);
-              const dayPay =
-                employee && hours
-                  ? calculatePay(record, rate).pay
-                  : undefined;
-              return (
-                <Table.Tr
-                  key={record.id}
-                  onClick={() => setEditingRecord(record)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <Table.Td>
-                    <Text fw={600}>{dayjs(record.date).format('M/D')}</Text>
-                    <Text size="xs" c="dimmed">
-                      {dayjs(record.date).format('ddd')}
-                    </Text>
-                  </Table.Td>
-                  <Table.Td>{record.clockIn ?? '-'}</Table.Td>
-                  <Table.Td>{record.clockOut ?? '-'}</Table.Td>
-                  <Table.Td>{formatHours(hours)}</Table.Td>
-                  <Table.Td>
-                    {typeof record.breakMinutes === 'number'
-                      ? `${record.breakMinutes}分`
-                      : '-'}
-                  </Table.Td>
-                  <Table.Td>{formatCurrency(rate)}</Table.Td>
-                  <Table.Td>{formatCurrency(dayPay)}</Table.Td>
-                  <Table.Td>{record.note || '-'}</Table.Td>
-                  <Table.Td>
-                    <StatusBadges issues={issues} />
-                  </Table.Td>
-                </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
+        <Table.ScrollContainer minWidth={800}>
+          <Table verticalSpacing="sm" highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>日付</Table.Th>
+                <Table.Th>出勤</Table.Th>
+                <Table.Th>退勤</Table.Th>
+                <Table.Th>休憩</Table.Th>
+                <Table.Th>実働</Table.Th>
+                <Table.Th>日額(概算)</Table.Th>
+                <Table.Th>メモ</Table.Th>
+                <Table.Th>ステータス</Table.Th>
+                <Table.Th>操作</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {records.map((record, index) => {
+                const issues = recordIssues[index];
+                const hours = calculateDailyHours(record);
+                const rate = getHourlyRate(record.date, employee?.wageHistory, employee?.hourlyRate ?? 0);
+                const dayPay = calculatePay(record, rate).pay;
+
+                return (
+                  <Table.Tr key={record.id}>
+                    <Table.Td>
+                      <Text fw={600}>{dayjs(record.date).format('M/D')}</Text>
+                      <Text size="xs" c="dimmed">
+                        {dayjs(record.date).format('ddd')}
+                      </Text>
+                    </Table.Td>
+                    <Table.Td>{record.clockIn ?? '-'}</Table.Td>
+                    <Table.Td>{record.clockOut ?? '-'}</Table.Td>
+                    <Table.Td>
+                      {typeof record.breakMinutes === 'number'
+                        ? `${record.breakMinutes}分`
+                        : '-'}
+                    </Table.Td>
+                    <Table.Td>{formatHours(hours)}</Table.Td>
+                    <Table.Td>{formatCurrency(dayPay)}</Table.Td>
+                    <Table.Td style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {record.note || '-'}
+                    </Table.Td>
+                    <Table.Td>
+                      <StatusBadges issues={issues} />
+                    </Table.Td>
+                    <Table.Td>
+                      <Button
+                        variant="subtle"
+                        size="xs"
+                        leftSection={<IconEdit size={14} />}
+                        onClick={() => setEditingRecord(record)}
+                      >
+                        修正
+                      </Button>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
         {records.length === 0 && (
           <Text c="dimmed" ta="center" py="xl">
             {monthLabel} に表示できる打刻データがありません。

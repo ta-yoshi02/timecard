@@ -229,93 +229,95 @@ export default function DashboardPage() {
             </Text>
           </div>
         </Group>
-        <Table verticalSpacing="sm" highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>スタッフ</Table.Th>
-              <Table.Th>役割</Table.Th>
-              <Table.Th>勤務日数</Table.Th>
-              <Table.Th>合計時間</Table.Th>
-              <Table.Th>概算給与</Table.Th>
-              <Table.Th>最終打刻</Table.Th>
-              <Table.Th>異常</Table.Th>
-              <Table.Th>操作</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            {filteredSummaries.map((summary) => {
-              const latest = summary.latestRecord;
-              const latestIssues = latest ? detectIssues(latest) : [];
-              const issueLabel = latest
-                ? formatClockRange(
-                  latestIssues,
-                  `${latest.date} ${latest.clockIn ?? '--:--'} - ${latest.clockOut ?? '--:--'}`,
-                )
-                : 'データなし';
+        <Table.ScrollContainer minWidth={800}>
+          <Table verticalSpacing="sm" highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th>スタッフ</Table.Th>
+                <Table.Th>役割</Table.Th>
+                <Table.Th>勤務日数</Table.Th>
+                <Table.Th>合計時間</Table.Th>
+                <Table.Th>概算給与</Table.Th>
+                <Table.Th>最終打刻</Table.Th>
+                <Table.Th>異常</Table.Th>
+                <Table.Th>操作</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {filteredSummaries.map((summary) => {
+                const latest = summary.latestRecord;
+                const latestIssues = latest ? detectIssues(latest) : [];
+                const issueLabel = latest
+                  ? formatClockRange(
+                    latestIssues,
+                    `${latest.date} ${latest.clockIn ?? '--:--'} - ${latest.clockOut ?? '--:--'}`,
+                  )
+                  : 'データなし';
 
-              const statusIssues = Array.from(
-                new Set(
-                  summary.records.flatMap((record) =>
-                    detectIssues(record).filter((issue) => issue !== 'overwork' && issue !== 'nightShift'),
+                const statusIssues = Array.from(
+                  new Set(
+                    summary.records.flatMap((record) =>
+                      detectIssues(record).filter((issue) => issue !== 'overwork' && issue !== 'nightShift'),
+                    ),
                   ),
-                ),
-              );
+                );
 
-              return (
-                <Table.Tr
-                  key={summary.employee.id}
-                  onClick={() => router.push(`/employees/${summary.employee.id}`)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <Table.Td>
-                    <Group gap="xs">
-                      <Text fw={600}>{summary.employee.name}</Text>
-                    </Group>
-                  </Table.Td>
-                  <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
-                  <Table.Td>{summary.records.length}日</Table.Td>
-                  <Table.Td>{formatHoursToHM(summary.totalHours)}</Table.Td>
-                  <Table.Td>{formatCurrency(summary.estimatedPay)}</Table.Td>
-                  <Table.Td>{issueLabel}</Table.Td>
-                  <Table.Td>
-                    <StatusBadges issues={statusIssues} />
-                  </Table.Td>
-                  <Table.Td onClick={(e) => e.stopPropagation()}>
-                    <Menu shadow="md" width={200}>
-                      <Menu.Target>
-                        <ActionIcon variant="subtle" color="gray">
-                          <IconDots size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item
-                          leftSection={<IconEdit size={14} />}
-                          onClick={() => setEditingEmployee(summary.employee)}
-                        >
-                          編集
-                        </Menu.Item>
-                        <Menu.Item
-                          leftSection={<IconKey size={14} />}
-                          onClick={() => setUserModalEmployee(summary.employee)}
-                        >
-                          アカウント管理
-                        </Menu.Item>
-                        <Menu.Divider />
-                        <Menu.Item
-                          color="red"
-                          leftSection={<IconTrash size={14} />}
-                          onClick={() => handleDeleteEmployee(summary.employee.id)}
-                        >
-                          削除
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Table.Td>
-                </Table.Tr>
-              );
-            })}
-          </Table.Tbody>
-        </Table>
+                return (
+                  <Table.Tr
+                    key={summary.employee.id}
+                    onClick={() => router.push(`/employees/${summary.employee.id}`)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <Table.Td>
+                      <Group gap="xs">
+                        <Text fw={600}>{summary.employee.name}</Text>
+                      </Group>
+                    </Table.Td>
+                    <Table.Td>{summary.employee.jobRole || summary.employee.role}</Table.Td>
+                    <Table.Td>{summary.records.length}日</Table.Td>
+                    <Table.Td>{formatHoursToHM(summary.totalHours)}</Table.Td>
+                    <Table.Td>{formatCurrency(summary.estimatedPay)}</Table.Td>
+                    <Table.Td>{issueLabel}</Table.Td>
+                    <Table.Td>
+                      <StatusBadges issues={statusIssues} />
+                    </Table.Td>
+                    <Table.Td onClick={(e) => e.stopPropagation()}>
+                      <Menu shadow="md" width={200}>
+                        <Menu.Target>
+                          <ActionIcon variant="subtle" color="gray">
+                            <IconDots size={16} />
+                          </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          <Menu.Item
+                            leftSection={<IconEdit size={14} />}
+                            onClick={() => setEditingEmployee(summary.employee)}
+                          >
+                            編集
+                          </Menu.Item>
+                          <Menu.Item
+                            leftSection={<IconKey size={14} />}
+                            onClick={() => setUserModalEmployee(summary.employee)}
+                          >
+                            アカウント管理
+                          </Menu.Item>
+                          <Menu.Divider />
+                          <Menu.Item
+                            color="red"
+                            leftSection={<IconTrash size={14} />}
+                            onClick={() => handleDeleteEmployee(summary.employee.id)}
+                          >
+                            削除
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </Table.Td>
+                  </Table.Tr>
+                );
+              })}
+            </Table.Tbody>
+          </Table>
+        </Table.ScrollContainer>
         {loading && (
           <Card padding="md" radius="md" withBorder mt="md">
             <Text c="dimmed">読み込み中...</Text>
