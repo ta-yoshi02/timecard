@@ -1,4 +1,5 @@
-import dayjs from "dayjs";
+import date from "@/lib/date";
+import type { Dayjs } from "dayjs";
 import { AttendanceRecord, Employee } from "./types";
 
 export type AttendanceIssue =
@@ -21,7 +22,7 @@ export const isValidTimeFormat = (timeStr: string): boolean => {
 
 export const parseTime = (dateStr: string, timeStr: string) => {
   const [h, m] = timeStr.split(":").map(Number);
-  return dayjs(dateStr).startOf("day").add(h, "hour").add(m, "minute");
+  return date(dateStr).startOf("day").add(h, "hour").add(m, "minute");
 };
 
 const getBreakMinutes = (record: AttendanceRecord) => {
@@ -53,8 +54,8 @@ export const calculateDailyHours = (
 };
 
 const calculateNightMinutes = (
-  start: dayjs.Dayjs,
-  end: dayjs.Dayjs,
+  start: Dayjs,
+  end: Dayjs,
 ): number => {
   // Window 1: same-day 22:00-24:00, Window 2: next-day 00:00-05:00
   // Note: start/end are full Date objects now, so we can compare directly against windows relative to the start date
@@ -73,7 +74,7 @@ const calculateNightMinutes = (
   // If a shift goes to 29:00 (05:00 next day), it works.
   // If a shift goes to 30:00 (06:00 next day), it stops counting at 05:00. Correct.
 
-  const overlap = (rangeStart: dayjs.Dayjs, rangeEnd: dayjs.Dayjs) => {
+  const overlap = (rangeStart: Dayjs, rangeEnd: Dayjs) => {
     const s = rangeStart.isAfter(start) ? rangeStart : start;
     const e = rangeEnd.isBefore(end) ? rangeEnd : end;
     return Math.max(e.diff(s, "minute"), 0);
@@ -155,14 +156,14 @@ export const calculatePay = (
 };
 
 export const isWithinRange = (
-  date: string,
+  dateStr: string,
   startDate?: Date | null,
   endDate?: Date | null,
 ): boolean => {
-  const current = dayjs(date);
+  const current = date(dateStr);
   if (!current.isValid()) return false;
-  if (startDate && current.isBefore(dayjs(startDate), "day")) return false;
-  if (endDate && current.isAfter(dayjs(endDate), "day")) return false;
+  if (startDate && current.isBefore(date(startDate), "day")) return false;
+  if (endDate && current.isAfter(date(endDate), "day")) return false;
   return true;
 };
 
@@ -202,7 +203,7 @@ const latestByDate = (
 ): AttendanceRecord | undefined => {
   return records
     .slice()
-    .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)))[0];
+    .sort((a, b) => date(b.date).diff(date(a.date)))[0];
 };
 
 const aggregateEmployeeRecords = (
@@ -263,9 +264,9 @@ export const summarizeEmployees = (
   const monthlyBase =
     monthlyRange?.start ?? monthlyRange?.end ?? fallbackEnd;
   const monthlyRangeStart =
-    monthlyRange?.start ?? dayjs(monthlyBase).startOf("month").toDate();
+    monthlyRange?.start ?? date(monthlyBase).startOf("month").toDate();
   const monthlyRangeEnd =
-    monthlyRange?.end ?? dayjs(monthlyBase).endOf("month").toDate();
+    monthlyRange?.end ?? date(monthlyBase).endOf("month").toDate();
   const monthlyRecords = filterRecordsByDateRange(
     records,
     monthlyRangeStart,
@@ -304,8 +305,8 @@ export const getLatestDatasetDate = (
   if (records.length === 0) return null;
   const latest = records
     .slice()
-    .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)))[0];
-  return dayjs(latest.date).toDate();
+    .sort((a, b) => date(b.date).diff(date(a.date)))[0];
+  return date(latest.date).toDate();
 };
 
 export const getEmployeeRecordsWithinDays = (
@@ -316,8 +317,8 @@ export const getEmployeeRecordsWithinDays = (
   if (records.length === 0) return [];
   const baseDate = getLatestDatasetDate(records);
   if (!baseDate) return [];
-  const start = dayjs(baseDate).subtract(days - 1, "day").toDate();
+  const start = date(baseDate).subtract(days - 1, "day").toDate();
   return filterRecordsByDateRange(records, start, baseDate)
     .filter((record) => record.employeeId === employeeId)
-    .sort((a, b) => dayjs(b.date).diff(dayjs(a.date)));
+    .sort((a, b) => date(b.date).diff(date(a.date)));
 };

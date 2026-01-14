@@ -1,11 +1,11 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import dayjs from 'dayjs';
+import date, { type Dayjs } from '@/lib/date';
 import prisma from '@/lib/prisma';
 import { SESSION_COOKIE_NAME, readSessionToken } from '@/lib/auth';
 import { isValidTimeFormat } from '@/lib/attendance';
 
-const normalizeDate = (date: Date | string) => dayjs(date).format('YYYY-MM-DD');
+const normalizeDate = (d: Date | string) => date(d).format('YYYY-MM-DD');
 
 type ClockAction = 'clockIn' | 'clockOut' | 'breakStart' | 'breakEnd' | 'update' | 'create';
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   const recordId = body?.recordId as string | undefined;
 
   // Use client time if provided, otherwise fallback to server time
-  const now = clientTime ? dayjs(clientTime) : dayjs();
+  const now = clientTime ? date(clientTime) : date();
   const todayStart = now.startOf('day').toDate();
   const todayEnd = now.endOf('day').toDate();
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const targetDate = dayjs(targetDateStr).startOf('day');
+    const targetDate = date(targetDateStr).startOf('day');
     if (!targetDate.isValid()) {
       return NextResponse.json(
         { error: '無効な日付です' },
@@ -170,9 +170,9 @@ export async function POST(request: NextRequest) {
 
     let breakMinutes: number | null = null;
     if (inputBreakStart && inputBreakEnd) {
-      const parseTimeStr = (date: Date, timeStr: string) => {
+      const parseTimeStr = (baseDate: Date, timeStr: string) => {
         const [h, m] = timeStr.split(':').map(Number);
-        return dayjs(date).startOf('day').add(h, 'hour').add(m, 'minute');
+        return date(baseDate).startOf('day').add(h, 'hour').add(m, 'minute');
       };
       const start = parseTimeStr(targetDate.toDate(), inputBreakStart);
       const end = parseTimeStr(targetDate.toDate(), inputBreakEnd);
@@ -287,8 +287,8 @@ export async function POST(request: NextRequest) {
   };
 
   // Helper to format time, handling 24+ hours for overnight shifts
-  const formatTime = (targetTime: dayjs.Dayjs) => {
-    const recordDate = dayjs(currentRecord.date).startOf('day');
+  const formatTime = (targetTime: Dayjs) => {
+    const recordDate = date(currentRecord.date).startOf('day');
     const targetDate = targetTime.startOf('day');
 
     if (targetDate.isAfter(recordDate)) {
@@ -349,9 +349,9 @@ export async function POST(request: NextRequest) {
     // Parsing "26:00" with dayjs might be tricky.
     // Better to reconstruct the full datetime for diffing.
 
-    const parseTimeStr = (date: Date, timeStr: string) => {
+    const parseTimeStr = (baseDate: Date, timeStr: string) => {
       const [h, m] = timeStr.split(':').map(Number);
-      return dayjs(date).startOf('day').add(h, 'hour').add(m, 'minute');
+      return date(baseDate).startOf('day').add(h, 'hour').add(m, 'minute');
     };
 
     const breakStartTime = parseTimeStr(currentRecord.date, currentRecord.breakStart);
@@ -417,9 +417,9 @@ export async function POST(request: NextRequest) {
     };
 
     if (patchedRecord.clockIn && patchedRecord.clockOut) {
-      const parseTimeStr = (date: Date, timeStr: string) => {
+      const parseTimeStr = (baseDate: Date, timeStr: string) => {
         const [h, m] = timeStr.split(':').map(Number);
-        return dayjs(date).startOf('day').add(h, 'hour').add(m, 'minute');
+        return date(baseDate).startOf('day').add(h, 'hour').add(m, 'minute');
       };
       const start = parseTimeStr(currentRecord.date, patchedRecord.clockIn);
       const end = parseTimeStr(currentRecord.date, patchedRecord.clockOut);
@@ -465,9 +465,9 @@ export async function POST(request: NextRequest) {
 
     // We should update calcBreakMinutes logic inline or helper
     if (patchedRecord.breakStart && patchedRecord.breakEnd) {
-      const parseTimeStr = (date: Date, timeStr: string) => {
+      const parseTimeStr = (baseDate: Date, timeStr: string) => {
         const [h, m] = timeStr.split(':').map(Number);
-        return dayjs(date).startOf('day').add(h, 'hour').add(m, 'minute');
+        return date(baseDate).startOf('day').add(h, 'hour').add(m, 'minute');
       };
       const start = parseTimeStr(currentRecord.date, patchedRecord.breakStart);
       const end = parseTimeStr(currentRecord.date, patchedRecord.breakEnd);
